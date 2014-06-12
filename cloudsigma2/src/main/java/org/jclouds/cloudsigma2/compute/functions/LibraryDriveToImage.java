@@ -16,41 +16,46 @@
  */
 package org.jclouds.cloudsigma2.compute.functions;
 
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableMap;
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import java.util.Map;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.jclouds.cloudsigma2.domain.DriveStatus;
 import org.jclouds.cloudsigma2.domain.LibraryDrive;
 import org.jclouds.compute.domain.Image;
-import org.jclouds.compute.domain.Image.Status;
 import org.jclouds.compute.domain.ImageBuilder;
 import org.jclouds.compute.domain.OperatingSystem;
 
-import javax.inject.Singleton;
-import java.util.Map;
+import com.google.common.base.Function;
 
 @Singleton
 public class LibraryDriveToImage implements Function<LibraryDrive, Image> {
 
-   private static final Map<DriveStatus, Status> driveStatusToNodeStatus = ImmutableMap
-         .<DriveStatus, Status>builder()
-         .put(DriveStatus.MOUNTED, Status.AVAILABLE)
-         .put(DriveStatus.UNMOUNTED, Status.UNRECOGNIZED)
-         .put(DriveStatus.COPYING, Status.PENDING)
-         .put(DriveStatus.UNAVAILABLE, Status.ERROR)
-         .build();
+   private final Map<DriveStatus, Image.Status> driveStatusToNodeStatus;
+
+   @Inject
+   public LibraryDriveToImage(Map<DriveStatus, Image.Status> driveStatusToNodeStatus) {
+      this.driveStatusToNodeStatus = checkNotNull(driveStatusToNodeStatus, "driveStatusToNodeStatus");
+   }
 
    @Override
    public Image apply(LibraryDrive libraryDrive) {
       return new ImageBuilder()
-            .id(libraryDrive.getUuid())
-            .userMetadata(libraryDrive.getMeta())
-            .name(libraryDrive.getName())
-            .description(libraryDrive.getDescription())
-            .operatingSystem(OperatingSystem.builder()
-                  .name(libraryDrive.getOs())
-                  .build())
-            .status(driveStatusToNodeStatus.get(libraryDrive.getStatus()))
-            .version("")
-            .build();
+         .ids(libraryDrive.getUuid())
+         .userMetadata(libraryDrive.getMeta())
+         .name(libraryDrive.getName())
+         .description(libraryDrive.getDescription())
+            // TODO: Is there a way to determine the OS family and version?
+         .operatingSystem(OperatingSystem.builder()
+               .name(libraryDrive.getOs())
+               .build())
+         .status(driveStatusToNodeStatus.get(libraryDrive.getStatus()))
+         .version("") // Leave it null instead of // blank.
+         .build();
+      // TODO: Do we know the default credentials for the images, in case a user has not specified a ssh public key
+      // authentication?
    }
 }

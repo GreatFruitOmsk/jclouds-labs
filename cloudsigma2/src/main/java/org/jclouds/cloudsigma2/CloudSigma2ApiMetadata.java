@@ -22,9 +22,11 @@ import java.net.URI;
 import java.util.Properties;
 
 import org.jclouds.apis.ApiMetadata;
+import org.jclouds.cloudsigma2.compute.config.CloudSigma2ComputeServiceContextModule;
 import org.jclouds.cloudsigma2.config.CloudSigma2HttpApiModule;
 import org.jclouds.cloudsigma2.config.CloudSigma2ParserModule;
 import org.jclouds.cloudsigma2.config.CloudSigma2Properties;
+import org.jclouds.compute.ComputeServiceContext;
 import org.jclouds.rest.internal.BaseHttpApiMetadata;
 
 import com.google.common.collect.ImmutableSet;
@@ -73,11 +75,11 @@ public class CloudSigma2ApiMetadata extends BaseHttpApiMetadata<CloudSigma2Api> 
                .version("2.0")
                .defaultEndpoint("https://zrh.cloudsigma.com/api/2.0")
                .defaultProperties(CloudSigma2ApiMetadata.defaultProperties())
-               // Uncomment once the ComputeService is implemented 
-               //.view(typeToken(ComputeServiceContext.class))
+               .view(ComputeServiceContext.class)
                .defaultModules(ImmutableSet.<Class<? extends Module>>of(
                      CloudSigma2HttpApiModule.class,
-                     CloudSigma2ParserModule.class));
+                     CloudSigma2ParserModule.class,
+                     CloudSigma2ComputeServiceContextModule.class));
       }
 
       @Override

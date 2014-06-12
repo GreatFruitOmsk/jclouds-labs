@@ -16,24 +16,35 @@
  */
 package org.jclouds.cloudsigma2.compute.config;
 
-import com.google.common.base.Function;
-import com.google.inject.TypeLiteral;
-import org.jclouds.cloudsigma2.compute.CloudSigma2ComputeServiceAdapter;
+import java.util.Map;
+
+import javax.inject.Singleton;
+
 import org.jclouds.cloudsigma2.compute.functions.LibraryDriveToImage;
+import org.jclouds.cloudsigma2.compute.functions.NICToAddress;
+import org.jclouds.cloudsigma2.compute.functions.ServerDriveToVolume;
 import org.jclouds.cloudsigma2.compute.functions.ServerInfoToNodeMetadata;
-import org.jclouds.cloudsigma2.compute.functions.ServerInfoToNodeMetadata.NICToAddress;
-import org.jclouds.cloudsigma2.compute.functions.ServerInfoToNodeMetadata.ServerDriveToVolume;
+import org.jclouds.cloudsigma2.compute.options.CloudSigma2TemplateOptions;
+import org.jclouds.cloudsigma2.compute.strategy.CloudSigma2ComputeServiceAdapter;
+import org.jclouds.cloudsigma2.domain.DriveStatus;
 import org.jclouds.cloudsigma2.domain.LibraryDrive;
 import org.jclouds.cloudsigma2.domain.NIC;
 import org.jclouds.cloudsigma2.domain.ServerDrive;
 import org.jclouds.cloudsigma2.domain.ServerInfo;
+import org.jclouds.cloudsigma2.domain.ServerStatus;
 import org.jclouds.compute.ComputeServiceAdapter;
 import org.jclouds.compute.config.ComputeServiceAdapterContextModule;
 import org.jclouds.compute.domain.Hardware;
 import org.jclouds.compute.domain.Image;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.Volume;
+import org.jclouds.compute.options.TemplateOptions;
 import org.jclouds.domain.Location;
+
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableMap;
+import com.google.inject.Provides;
+import com.google.inject.TypeLiteral;
 
 public class CloudSigma2ComputeServiceContextModule extends
       ComputeServiceAdapterContextModule<ServerInfo, Hardware, LibraryDrive, Location> {
@@ -41,8 +52,10 @@ public class CloudSigma2ComputeServiceContextModule extends
    @Override
    protected void configure() {
       super.configure();
+      
       bind(new TypeLiteral<ComputeServiceAdapter<ServerInfo, Hardware, LibraryDrive, Location>>() {
       }).to(CloudSigma2ComputeServiceAdapter.class);
+      
       bind(new TypeLiteral<Function<ServerInfo, NodeMetadata>>() {
       }).to(ServerInfoToNodeMetadata.class);
       bind(new TypeLiteral<Function<LibraryDrive, Image>>() {
@@ -51,5 +64,38 @@ public class CloudSigma2ComputeServiceContextModule extends
       }).to(ServerDriveToVolume.class);
       bind(new TypeLiteral<Function<NIC, String>>() {
       }).to(NICToAddress.class);
+      
+      bind(TemplateOptions.class).to(CloudSigma2TemplateOptions.class);
+   }
+
+   private static final Map<ServerStatus, NodeMetadata.Status> serverStatusToNodeStatus =
+         ImmutableMap.<ServerStatus, NodeMetadata.Status> builder()
+         .put(ServerStatus.RUNNING, NodeMetadata.Status.RUNNING)
+         .put(ServerStatus.STARTING, NodeMetadata.Status.PENDING)
+         .put(ServerStatus.STOPPING, NodeMetadata.Status.PENDING)
+         .put(ServerStatus.STOPPED, NodeMetadata.Status.SUSPENDED)
+         .put(ServerStatus.PAUSED, NodeMetadata.Status.SUSPENDED)
+         .put(ServerStatus.UNAVAILABLE, NodeMetadata.Status.SUSPENDED)
+         .put(ServerStatus.UNRECOGNIZED, NodeMetadata.Status.UNRECOGNIZED)
+         .build();
+   
+   @Provides
+   @Singleton
+   protected Map<ServerStatus, NodeMetadata.Status> provideStatusMap() {
+      return serverStatusToNodeStatus;
+   }
+   
+   private static final Map<DriveStatus, Image.Status> driveStatusToImageStatus =
+         ImmutableMap.<DriveStatus, Image.Status>builder()
+         .put(DriveStatus.MOUNTED, Image.Status.AVAILABLE)
+         .put(DriveStatus.UNMOUNTED, Image.Status.UNRECOGNIZED)
+         .put(DriveStatus.COPYING, Image.Status.PENDING)
+         .put(DriveStatus.UNAVAILABLE, Image.Status.ERROR)
+         .build();
+   
+   @Provides
+   @Singleton
+   protected Map<DriveStatus, Image.Status> provideImageStatusMap() {
+      return driveStatusToImageStatus;
    }
 }
