@@ -47,7 +47,7 @@ public final class ServerDriveToVolume implements Function<ServerDrive, Volume> 
       builder.size(driveInfo.getSize().floatValue());
       builder.durable(true);
       builder.type(Volume.Type.NAS);
-      // TODO: Do we know if the volume is the boot device?
+      builder.bootDevice(serverDrive.getBootOrder() != 0);
       return builder.build();
    }
 }

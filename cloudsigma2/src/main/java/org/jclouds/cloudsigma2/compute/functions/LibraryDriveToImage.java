@@ -30,6 +30,7 @@ import org.jclouds.compute.domain.ImageBuilder;
 import org.jclouds.compute.domain.OperatingSystem;
 
 import com.google.common.base.Function;
+import org.jclouds.compute.domain.OsFamily;
 
 @Singleton
 public class LibraryDriveToImage implements Function<LibraryDrive, Image> {
@@ -48,14 +49,12 @@ public class LibraryDriveToImage implements Function<LibraryDrive, Image> {
          .userMetadata(libraryDrive.getMeta())
          .name(libraryDrive.getName())
          .description(libraryDrive.getDescription())
-            // TODO: Is there a way to determine the OS family and version?
          .operatingSystem(OperatingSystem.builder()
-               .name(libraryDrive.getOs())
+               .name(libraryDrive.getName())
+               .arch(libraryDrive.getArch())
+               .family(OsFamily.fromValue(libraryDrive.getOs()))
                .build())
          .status(driveStatusToNodeStatus.get(libraryDrive.getStatus()))
-         .version("") // Leave it null instead of // blank.
          .build();
-      // TODO: Do we know the default credentials for the images, in case a user has not specified a ssh public key
-      // authentication?
    }
 }
