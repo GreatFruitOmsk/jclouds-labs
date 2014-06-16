@@ -16,16 +16,22 @@
  */
 package org.jclouds.cloudsigma2.compute.config;
 
+import static org.jclouds.cloudsigma2.config.CloudSigma2Properties.TIMEOUT_DRIVE_CLONED;
+import static org.jclouds.util.Predicates2.retry;
+
 import java.util.Map;
 
+import javax.inject.Named;
 import javax.inject.Singleton;
 
+import org.jclouds.cloudsigma2.CloudSigma2Api;
 import org.jclouds.cloudsigma2.compute.functions.LibraryDriveToImage;
 import org.jclouds.cloudsigma2.compute.functions.NICToAddress;
 import org.jclouds.cloudsigma2.compute.functions.ServerDriveToVolume;
 import org.jclouds.cloudsigma2.compute.functions.ServerInfoToNodeMetadata;
 import org.jclouds.cloudsigma2.compute.options.CloudSigma2TemplateOptions;
 import org.jclouds.cloudsigma2.compute.strategy.CloudSigma2ComputeServiceAdapter;
+import org.jclouds.cloudsigma2.domain.DriveInfo;
 import org.jclouds.cloudsigma2.domain.DriveStatus;
 import org.jclouds.cloudsigma2.domain.LibraryDrive;
 import org.jclouds.cloudsigma2.domain.NIC;
@@ -42,6 +48,7 @@ import org.jclouds.compute.options.TemplateOptions;
 import org.jclouds.domain.Location;
 
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
@@ -97,5 +104,18 @@ public class CloudSigma2ComputeServiceContextModule extends
    @Singleton
    protected Map<DriveStatus, Image.Status> provideImageStatusMap() {
       return driveStatusToImageStatus;
+   }
+   
+   @Provides
+   @Singleton
+   @Named(TIMEOUT_DRIVE_CLONED)
+   protected Predicate<DriveInfo> provideDropletRunningPredicate(final CloudSigma2Api api, @Named(TIMEOUT_DRIVE_CLONED) long driveClonedTimeout) {
+      return retry(new Predicate<DriveInfo>() {
+         @Override
+         public boolean apply(DriveInfo input) {
+            DriveInfo drive = api.getDriveInfo(input.getUuid());
+            return drive.getStatus() == DriveStatus.UNMOUNTED;
+         }
+      }, driveClonedTimeout);
    }
 }

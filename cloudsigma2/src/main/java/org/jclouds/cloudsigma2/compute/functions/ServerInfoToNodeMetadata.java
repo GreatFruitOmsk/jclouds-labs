@@ -70,6 +70,14 @@ public class ServerInfoToNodeMetadata implements Function<ServerInfo, NodeMetada
       builder.status(serverStatusToNodeStatus.get(serverInfo.getStatus()));
       builder.publicAddresses(filter(transform(serverInfo.getNics(), nicToAddress), notNull()));
       
+      /*
+       * TODO: Try to populate the credentials here. When creating new servers, the ComputeService will already
+       * set the credentials. We should be able to recover them here either:
+       * - From the API.
+       * - If the API does not support it, we could store some info in the metadata (in the ComputeService) and read it here. 
+       */
+      builder.credentials(null);
+      
       return builder.build();
    }
 }
