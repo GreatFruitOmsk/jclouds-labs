@@ -188,13 +188,7 @@ public class CloudSigma2ComputeServiceAdapter implements
 
    @Override
    public Iterable<LibraryDrive> listImages() {
-      // TODO: jclouds should work with preinstalled images?
-      return api.listLibraryDrives().concat().filter(new Predicate<LibraryDrive>() {
-         @Override
-         public boolean apply(LibraryDrive input) {
-            return input.getMedia() == MediaType.DISK;
-         }
-      });
+      return api.listLibraryDrives().concat();
    }
 
    @Override
