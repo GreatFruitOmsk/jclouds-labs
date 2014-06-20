@@ -46,6 +46,7 @@ import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.Volume;
 import org.jclouds.compute.options.TemplateOptions;
 import org.jclouds.domain.Location;
+import org.jclouds.functions.IdentityFunction;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
@@ -56,6 +57,7 @@ import com.google.inject.TypeLiteral;
 public class CloudSigma2ComputeServiceContextModule extends
       ComputeServiceAdapterContextModule<ServerInfo, Hardware, LibraryDrive, Location> {
 
+   @SuppressWarnings("unchecked")
    @Override
    protected void configure() {
       super.configure();
@@ -69,6 +71,10 @@ public class CloudSigma2ComputeServiceContextModule extends
       }).to(LibraryDriveToImage.class);
       bind(new TypeLiteral<Function<ServerDrive, Volume>>() {
       }).to(ServerDriveToVolume.class);
+      bind(new TypeLiteral<Function<Hardware, Hardware>>() {
+      }).to(Class.class.cast(IdentityFunction.class));
+      bind(new TypeLiteral<Function<Location, Location>>() {
+      }).to(Class.class.cast(IdentityFunction.class));
       bind(new TypeLiteral<Function<NIC, String>>() {
       }).to(NICToAddress.class);
 
