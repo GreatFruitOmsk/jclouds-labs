@@ -108,6 +108,7 @@ public class CloudSigma2ComputeServiceAdapter implements
       // If not, we'll have to make an additional call here to get the full populated object we've jsut cloned and
       // poll for its status
       driveCloned.apply(drive);
+      // The drive needs to be unmounted so we can attach it to a server
       checkState(drive.getStatus() == DriveStatus.UNMOUNTED, "Resource is in invalid status: %s", drive.getStatus());
       
       logger.debug(">> drive cloned (%s)...", drive);

@@ -59,10 +59,10 @@ public class CloudSigma2ComputeServiceContextModule extends
    @Override
    protected void configure() {
       super.configure();
-      
+
       bind(new TypeLiteral<ComputeServiceAdapter<ServerInfo, Hardware, LibraryDrive, Location>>() {
       }).to(CloudSigma2ComputeServiceAdapter.class);
-      
+
       bind(new TypeLiteral<Function<ServerInfo, NodeMetadata>>() {
       }).to(ServerInfoToNodeMetadata.class);
       bind(new TypeLiteral<Function<LibraryDrive, Image>>() {
@@ -71,50 +71,55 @@ public class CloudSigma2ComputeServiceContextModule extends
       }).to(ServerDriveToVolume.class);
       bind(new TypeLiteral<Function<NIC, String>>() {
       }).to(NICToAddress.class);
-      
+
       bind(TemplateOptions.class).to(CloudSigma2TemplateOptions.class);
    }
 
-   private static final Map<ServerStatus, NodeMetadata.Status> serverStatusToNodeStatus =
-         ImmutableMap.<ServerStatus, NodeMetadata.Status> builder()
-         .put(ServerStatus.RUNNING, NodeMetadata.Status.RUNNING)
+   private static final Map<ServerStatus, NodeMetadata.Status> serverStatusToNodeStatus = ImmutableMap
+         .<ServerStatus, NodeMetadata.Status> builder().put(ServerStatus.RUNNING, NodeMetadata.Status.RUNNING)
          .put(ServerStatus.STARTING, NodeMetadata.Status.PENDING)
          .put(ServerStatus.STOPPING, NodeMetadata.Status.PENDING)
          .put(ServerStatus.STOPPED, NodeMetadata.Status.SUSPENDED)
          .put(ServerStatus.PAUSED, NodeMetadata.Status.SUSPENDED)
          .put(ServerStatus.UNAVAILABLE, NodeMetadata.Status.SUSPENDED)
-         .put(ServerStatus.UNRECOGNIZED, NodeMetadata.Status.UNRECOGNIZED)
-         .build();
-   
+         .put(ServerStatus.UNRECOGNIZED, NodeMetadata.Status.UNRECOGNIZED).build();
+
    @Provides
    @Singleton
    protected Map<ServerStatus, NodeMetadata.Status> provideStatusMap() {
       return serverStatusToNodeStatus;
    }
-   
-   private static final Map<DriveStatus, Image.Status> driveStatusToImageStatus =
-         ImmutableMap.<DriveStatus, Image.Status>builder()
-         .put(DriveStatus.MOUNTED, Image.Status.AVAILABLE)
-         .put(DriveStatus.UNMOUNTED, Image.Status.UNRECOGNIZED)
-         .put(DriveStatus.COPYING, Image.Status.PENDING)
-         .put(DriveStatus.UNAVAILABLE, Image.Status.ERROR)
-         .build();
-   
+
+   private static final Map<DriveStatus, Image.Status> driveStatusToImageStatus = ImmutableMap
+         .<DriveStatus, Image.Status> builder().put(DriveStatus.MOUNTED, Image.Status.AVAILABLE)
+         .put(DriveStatus.UNMOUNTED, Image.Status.UNRECOGNIZED).put(DriveStatus.COPYING, Image.Status.PENDING)
+         .put(DriveStatus.UNAVAILABLE, Image.Status.ERROR).build();
+
    @Provides
    @Singleton
    protected Map<DriveStatus, Image.Status> provideImageStatusMap() {
       return driveStatusToImageStatus;
    }
-   
+
    @Provides
    @Singleton
    @Named(TIMEOUT_DRIVE_CLONED)
-   protected Predicate<DriveInfo> provideDropletRunningPredicate(final CloudSigma2Api api, @Named(TIMEOUT_DRIVE_CLONED) long driveClonedTimeout) {
+   protected Predicate<DriveInfo> provideDriveClonedPredicate(final CloudSigma2Api api,
+         @Named(TIMEOUT_DRIVE_CLONED) long driveClonedTimeout) {
       return retry(new Predicate<DriveInfo>() {
          @Override
          public boolean apply(DriveInfo input) {
             DriveInfo drive = api.getDriveInfo(input.getUuid());
-            return drive.getStatus() == DriveStatus.UNMOUNTED;
+            switch (drive.getStatus()) {
+               case COPYING:
+               case UNAVAILABLE:
+                  return false;
+               case MOUNTED:
+               case UNMOUNTED:
+                  return true;
+               default:
+                  throw new IllegalStateException("Resource is in invalid status: " + drive.getStatus());
+            }
          }
       }, driveClonedTimeout);
    }
