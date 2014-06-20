@@ -36,17 +36,7 @@ import javax.inject.Singleton;
 
 import org.jclouds.Constants;
 import org.jclouds.cloudsigma2.CloudSigma2Api;
-import org.jclouds.cloudsigma2.domain.DeviceEmulationType;
-import org.jclouds.cloudsigma2.domain.DriveInfo;
-import org.jclouds.cloudsigma2.domain.DriveStatus;
-import org.jclouds.cloudsigma2.domain.FirewallAction;
-import org.jclouds.cloudsigma2.domain.FirewallPolicy;
-import org.jclouds.cloudsigma2.domain.FirewallRule;
-import org.jclouds.cloudsigma2.domain.LibraryDrive;
-import org.jclouds.cloudsigma2.domain.MediaType;
-import org.jclouds.cloudsigma2.domain.NIC;
-import org.jclouds.cloudsigma2.domain.ServerInfo;
-import org.jclouds.cloudsigma2.domain.VLANInfo;
+import org.jclouds.cloudsigma2.domain.*;
 import org.jclouds.compute.ComputeServiceAdapter;
 import org.jclouds.compute.domain.Hardware;
 import org.jclouds.compute.domain.HardwareBuilder;
@@ -100,18 +90,23 @@ public class CloudSigma2ComputeServiceAdapter implements
       Hardware hardware = template.getHardware();
 
       logger.debug(">> cloning library drive %s...", image.getProviderId());
-      
-      LibraryDrive drive = api.cloneLibraryDrive(image.getProviderId(), new LibraryDrive.Builder().build());
-      
-      // TODO: We need to wait until the clone operation has completed.
-      // Can we safely do this by polling the returned LibraryDrive? Is the UUID field properly populated?
-      // If not, we'll have to make an additional call here to get the full populated object we've jsut cloned and
-      // poll for its status
-      driveCloned.apply(drive);
-      // The drive needs to be unmounted so we can attach it to a server
-      checkState(drive.getStatus() == DriveStatus.UNMOUNTED, "Resource is in invalid status: %s", drive.getStatus());
-      
-      logger.debug(">> drive cloned (%s)...", drive);
+
+      LibraryDrive drive = api.getLibraryDrive(image.getProviderId());
+
+      if (!drive.getMedia().equals(MediaType.CDROM)) {
+         drive = api.cloneLibraryDrive(image.getProviderId(),
+               new LibraryDrive.Builder()
+                     .name(image.getName())
+                     .build());
+         // TODO: We need to wait until the clone operation has completed.
+         // Can we safely do this by polling the returned LibraryDrive? Is the UUID field properly populated?
+         // If not, we'll have to make an additional call here to get the full populated object we've jsut cloned and
+         // poll for its status
+         driveCloned.apply(drive);
+         checkState(drive.getStatus() == DriveStatus.UNMOUNTED, "Resource is in invalid status: %s", drive.getStatus());
+
+         logger.debug(">> drive cloned (%s)...", drive);
+      }
 
       ImmutableList.Builder<FirewallRule> firewallRulesBuilder = ImmutableList.builder();
       for (int port : options.getInboundPorts()) {

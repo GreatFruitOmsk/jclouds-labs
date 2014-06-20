@@ -254,6 +254,8 @@ public interface CloudSigma2Api extends Closeable {
    @POST
    @Path("/drives/{uuid}/action/?do=clone")
    @Fallback(Fallbacks.VoidOnNotFoundOr404.class)
+   @SelectJson("objects")
+   @OnlyElement
    DriveInfo cloneDrive(@PathParam("uuid") String sourceUuid,
                         @Nullable @BinderParam(BindDriveToJson.class) DriveInfo driveInfo);
 
@@ -303,6 +305,8 @@ public interface CloudSigma2Api extends Closeable {
    @POST
    @Path("/libdrives/{uuid}/action/?do=clone")
    @Fallback(Fallbacks.VoidOnNotFoundOr404.class)
+   @SelectJson("objects")
+   @OnlyElement
    LibraryDrive cloneLibraryDrive(@PathParam("uuid") String uuid
          , @Nullable @BinderParam(BindLibraryDriveToJson.class) LibraryDrive libraryDrive);
 
