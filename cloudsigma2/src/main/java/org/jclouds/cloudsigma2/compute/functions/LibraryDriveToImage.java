@@ -53,6 +53,7 @@ public class LibraryDriveToImage implements Function<LibraryDrive, Image> {
                .name(libraryDrive.getName())
                .arch(libraryDrive.getArch())
                .family(OsFamily.fromValue(libraryDrive.getOs()))
+               .version(libraryDrive.getVersion())
                .build())
          .status(driveStatusToNodeStatus.get(libraryDrive.getStatus()))
          .build();

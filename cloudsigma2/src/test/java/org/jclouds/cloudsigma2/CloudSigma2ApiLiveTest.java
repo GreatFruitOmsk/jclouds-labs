@@ -681,6 +681,7 @@ public class CloudSigma2ApiLiveTest extends BaseApiLiveTest<CloudSigma2Api> {
       assertEquals(newDrive.getImageType(), meta.get("image_type"));
       assertEquals(newDrive.getInstallNotes(), meta.get("install_notes"));
       assertEquals(newDrive.getOs(), meta.get("os"));
+      assertEquals(newDrive.getVersion(), meta.get("version"));
    }
 
    private void checkServer(ServerInfo newServer, ServerInfo createdServer) {
