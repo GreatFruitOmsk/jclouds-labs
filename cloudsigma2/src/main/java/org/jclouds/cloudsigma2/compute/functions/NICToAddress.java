@@ -19,9 +19,11 @@ package org.jclouds.cloudsigma2.compute.functions;
 import javax.inject.Singleton;
 
 import org.jclouds.cloudsigma2.domain.IPConfiguration;
+import org.jclouds.cloudsigma2.domain.IPConfigurationType;
 import org.jclouds.cloudsigma2.domain.NIC;
 
 import com.google.common.base.Function;
+import org.jclouds.cloudsigma2.domain.NICStats;
 
 @Singleton
 public final class NICToAddress implements Function<NIC, String> {
@@ -30,10 +32,24 @@ public final class NICToAddress implements Function<NIC, String> {
    public String apply(NIC nic) {
       IPConfiguration ipV4Configuration = nic.getIpV4Configuration();
       IPConfiguration ipV6Configuration = nic.getIpV6Configuration();
-      if (ipV4Configuration != null && ipV4Configuration.getIp() != null) {
-         return ipV4Configuration.getIp().getUuid();
-      } else if (ipV6Configuration != null && ipV6Configuration.getIp() != null) {
-         return ipV6Configuration.getIp().getUuid();
+      if (ipV4Configuration != null) {
+         if (ipV4Configuration.getIp() != null) {
+            return ipV4Configuration.getIp().getUuid();
+         } else if (ipV4Configuration.getConfigurationType().equals(IPConfigurationType.DHCP)) {
+            NICStats runtime = nic.getRuntime();
+            if (runtime != null && runtime.getIpV4() != null) {
+               return runtime.getIpV4().getUuid();
+            }
+         }
+      } else if (ipV6Configuration != null) {
+         if (ipV6Configuration.getIp() != null) {
+            return ipV6Configuration.getIp().getUuid();
+         } else if (ipV6Configuration.getConfigurationType().equals(IPConfigurationType.DHCP)) {
+            NICStats runtime = nic.getRuntime();
+            if (runtime != null && runtime.getIpV6() != null) {
+               return runtime.getIpV6().getUuid();
+            }
+         }
       }
       return null;
    }
