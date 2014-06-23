@@ -323,7 +323,7 @@ public class CloudSigma2ApiExpectTest extends BaseRestApiExpectTest<CloudSigma2A
 
    @Test
    public void testCloneDrive() throws Exception {
-      String uuid = "e96f3c63-6f50-47eb-9401-a56c5ccf6b32";
+      String uuid = "92ca1450-417e-4cc1-983b-1015777e2591";
       CloudSigma2Api api = requestSendsResponse(
             postBuilder()
                   .payload(payloadFromResourceWithContentType("/drives-create-request.json",
@@ -331,7 +331,7 @@ public class CloudSigma2ApiExpectTest extends BaseRestApiExpectTest<CloudSigma2A
                   .endpoint(endpoint + "drives/" + uuid + "/action/?do=clone")
                   .build(),
             responseBuilder()
-                  .payload(payloadFromResourceWithContentType("/drives-detail.json", MediaType.APPLICATION_JSON))
+                  .payload(payloadFromResourceWithContentType("/drive-cloned.json", MediaType.APPLICATION_JSON))
                   .build());
 
       DriveInfo result = api.cloneDrive(uuid, new DriveInfo.Builder()
@@ -404,7 +404,7 @@ public class CloudSigma2ApiExpectTest extends BaseRestApiExpectTest<CloudSigma2A
 
    @Test
    public void testCloneLibraryDrive() throws Exception {
-      String uuid = "e96f3c63-6f50-47eb-9401-a56c5ccf6b32";
+      String uuid = "8c45d8d9-4efd-44ec-9833-8d52004b4298";
       CloudSigma2Api api = requestSendsResponse(
             postBuilder()
                   .payload(payloadFromResourceWithContentType("/libdrives-create-request.json",
@@ -412,7 +412,7 @@ public class CloudSigma2ApiExpectTest extends BaseRestApiExpectTest<CloudSigma2A
                   .endpoint(endpoint + "libdrives/" + uuid + "/action/?do=clone")
                   .build(),
             responseBuilder()
-                  .payload(payloadFromResourceWithContentType("/libdrives-single.json", MediaType.APPLICATION_JSON))
+                  .payload(payloadFromResourceWithContentType("/libdrives-cloned.json", MediaType.APPLICATION_JSON))
                   .build());
 
       DriveInfo result = api.cloneLibraryDrive(uuid, new LibraryDrive.Builder()

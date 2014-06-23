@@ -70,6 +70,8 @@ import com.google.common.collect.Maps;
 public class CloudSigma2ApiLiveTest extends BaseApiLiveTest<CloudSigma2Api> {
 
    private DriveInfo createdDrive;
+   private DriveInfo clonedDrive;
+   private LibraryDrive clonedLibraryDrive;
    private List<DriveInfo> createdDrives;
    private ServerInfo createdServer;
    private List<ServerInfo> createdServers;
@@ -142,11 +144,23 @@ public class CloudSigma2ApiLiveTest extends BaseApiLiveTest<CloudSigma2Api> {
       checkDrive(editedDrive, api.editDrive(createdDrive.getUuid(), editedDrive));
    }
 
+   @Test(dependsOnMethods = {"testCreateDrive"})
+   public void testCloneDrive() throws Exception {
+      clonedDrive = api.cloneDrive(createdDrive.getUuid(), null);
+      checkDrive(createdDrive, clonedDrive);
+   }
+
    @Test(dependsOnMethods = {"testEditDrive", "testCreateTag", "testEditTag"})
    public void testDeleteDrive() throws Exception {
       String uuid = createdDrive.getUuid();
       api.deleteDrive(uuid);
       assertNull(api.getDriveInfo(uuid));
+      String clonedDriveUuid = clonedDrive.getUuid();
+      api.deleteDrive(clonedDriveUuid);
+      assertNull(api.getDriveInfo(clonedDriveUuid));
+      String clonedLibraryDriveUuid = clonedLibraryDrive.getUuid();
+      api.deleteDrive(clonedLibraryDriveUuid);
+      assertNull(api.getDriveInfo(clonedLibraryDriveUuid));
    }
 
    @Test(dependsOnMethods = {"testCreateDrives"})
@@ -173,6 +187,13 @@ public class CloudSigma2ApiLiveTest extends BaseApiLiveTest<CloudSigma2Api> {
       for (LibraryDrive libraryDrive : api.listLibraryDrives().concat()) {
          assertNotNull(libraryDrive.getUuid());
       }
+   }
+
+   @Test
+   public void testCloneLibraryDrive() throws Exception {
+      LibraryDrive libraryDrive = api.listLibraryDrives().concat().get(0);
+      clonedLibraryDrive = api.cloneLibraryDrive(libraryDrive.getUuid(), null);
+      checkLibraryDrive(libraryDrive, clonedLibraryDrive);
    }
 
    @Test(dependsOnMethods = {"testCreateServers"})
@@ -650,6 +671,16 @@ public class CloudSigma2ApiLiveTest extends BaseApiLiveTest<CloudSigma2Api> {
    private void checkDrive(DriveInfo newDrive, DriveInfo createdDrive) {
       assertEquals(newDrive.getName(), createdDrive.getName());
       assertEquals(newDrive.getMedia(), createdDrive.getMedia());
+   }
+
+   private void checkLibraryDrive(LibraryDrive newDrive, LibraryDrive createdDrive) {
+      checkDrive(newDrive, createdDrive);
+      Map<String, String> meta = createdDrive.getMeta();
+      assertEquals(newDrive.getArch(), meta.get("arch"));
+      assertEquals(newDrive.getDescription(), meta.get("description"));
+      assertEquals(newDrive.getImageType(), meta.get("image_type"));
+      assertEquals(newDrive.getInstallNotes(), meta.get("install_notes"));
+      assertEquals(newDrive.getOs(), meta.get("os"));
    }
 
    private void checkServer(ServerInfo newServer, ServerInfo createdServer) {
