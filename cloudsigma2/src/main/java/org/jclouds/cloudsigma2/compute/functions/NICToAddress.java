@@ -30,9 +30,9 @@ public final class NICToAddress implements Function<NIC, String> {
    public String apply(NIC nic) {
       IPConfiguration ipV4Configuration = nic.getIpV4Configuration();
       IPConfiguration ipV6Configuration = nic.getIpV6Configuration();
-      if (ipV4Configuration != null) {
+      if (ipV4Configuration != null && ipV4Configuration.getIp() != null) {
          return ipV4Configuration.getIp().getUuid();
-      } else if (ipV6Configuration != null) {
+      } else if (ipV6Configuration != null && ipV6Configuration.getIp() != null) {
          return ipV6Configuration.getIp().getUuid();
       }
       return null;
