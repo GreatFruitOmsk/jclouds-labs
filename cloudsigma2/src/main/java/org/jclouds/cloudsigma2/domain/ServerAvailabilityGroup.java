@@ -51,6 +51,18 @@ public class ServerAvailabilityGroup {
 
    @Override
    public String toString() {
-      return Joiner.on(',').join(uuids);
+      String returnString = "";
+
+      Iterator<?> iterator = uuids.iterator();
+
+      while (iterator.hasNext()) {
+         returnString += iterator.next();
+
+         if (iterator.hasNext()) {
+            returnString += ",";
+         }
+      }
+
+      return returnString;
    }
 }

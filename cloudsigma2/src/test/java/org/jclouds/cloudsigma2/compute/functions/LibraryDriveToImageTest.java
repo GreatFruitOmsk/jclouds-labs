@@ -16,24 +16,22 @@
  */
 package org.jclouds.cloudsigma2.compute.functions;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.inject.Guice;
+import static org.jclouds.cloudsigma2.compute.config.CloudSigma2ComputeServiceContextModule.driveStatusToImageStatus;
+import static org.testng.Assert.assertEquals;
+
 import org.jclouds.cloudsigma2.domain.DriveStatus;
 import org.jclouds.cloudsigma2.domain.LibraryDrive;
 import org.jclouds.compute.domain.Image;
 import org.jclouds.compute.domain.ImageBuilder;
 import org.jclouds.compute.domain.OperatingSystem;
 import org.jclouds.compute.domain.OsFamily;
-import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-@Test
-public class LibraryDriveToImageTest {
+import com.google.common.collect.ImmutableMap;
 
-   private static final LibraryDriveToImage CREATE_LIBRARY_DRIVE_TO_IMAGE = Guice
-         .createInjector()
-         .getInstance(LibraryDriveToImage.class);
+@Test(groups = "unit", testName = "LibraryDriveToImageTest")
+public class LibraryDriveToImageTest {
 
    private LibraryDrive input;
    private Image expected;
@@ -70,7 +68,11 @@ public class LibraryDriveToImageTest {
             .build();
    }
 
-   public void test() {
-      Assert.assertEquals(CREATE_LIBRARY_DRIVE_TO_IMAGE.apply(input), expected);
+   public void testConvertLibraryDrive() {
+      LibraryDriveToImage function = new LibraryDriveToImage(driveStatusToImageStatus);
+      // The jclouds method to compare images only compares the ID.
+      // Specific assertions for the rest of the image fields must be added here to properly
+      // verify the conversion function
+      assertEquals(function.apply(input), expected);
    }
 }

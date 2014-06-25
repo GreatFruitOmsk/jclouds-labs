@@ -16,23 +16,40 @@
  */
 package org.jclouds.cloudsigma2.compute.functions;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.inject.Guice;
-import org.jclouds.cloudsigma2.domain.*;
-import org.jclouds.compute.domain.*;
-import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.replay;
+import static org.easymock.EasyMock.verify;
+import static org.jclouds.cloudsigma2.compute.config.CloudSigma2ComputeServiceContextModule.serverStatusToNodeStatus;
+import static org.testng.Assert.assertEquals;
 
 import java.math.BigInteger;
 import java.net.URI;
 
-@Test
+import org.easymock.EasyMock;
+import org.jclouds.cloudsigma2.CloudSigma2Api;
+import org.jclouds.cloudsigma2.domain.DeviceEmulationType;
+import org.jclouds.cloudsigma2.domain.Drive;
+import org.jclouds.cloudsigma2.domain.DriveInfo;
+import org.jclouds.cloudsigma2.domain.IP;
+import org.jclouds.cloudsigma2.domain.IPConfiguration;
+import org.jclouds.cloudsigma2.domain.NIC;
+import org.jclouds.cloudsigma2.domain.ServerDrive;
+import org.jclouds.cloudsigma2.domain.ServerInfo;
+import org.jclouds.cloudsigma2.domain.ServerStatus;
+import org.jclouds.compute.domain.HardwareBuilder;
+import org.jclouds.compute.domain.NodeMetadata;
+import org.jclouds.compute.domain.NodeMetadataBuilder;
+import org.jclouds.compute.domain.Processor;
+import org.jclouds.compute.domain.Volume;
+import org.jclouds.compute.domain.VolumeBuilder;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+
+@Test(groups = "unit", testName = "ServerInfoToNodeMetadataTest")
 public class ServerInfoToNodeMetadataTest {
-   private static final ServerInfoToNodeMetadata SERVER_INFO_TO_NODE_METADATA = Guice
-         .createInjector()
-         .getInstance(ServerInfoToNodeMetadata.class);
 
    private ServerInfo input;
    private NodeMetadata expected;
@@ -89,7 +106,26 @@ public class ServerInfoToNodeMetadataTest {
             .build();
    }
 
-   public void test() {
-      Assert.assertEquals(SERVER_INFO_TO_NODE_METADATA.apply(input), expected);
+   public void testConvertServerInfo() {
+      CloudSigma2Api api = EasyMock.createMock(CloudSigma2Api.class);
+
+      for (ServerDrive drive : input.getDrives()) {
+         DriveInfo mockDrive = new DriveInfo.Builder()
+         .uuid(drive.getDriveUuid())
+         .size(new BigInteger("1024000"))
+         .build();
+         
+         expect(api.getDriveInfo(drive.getDriveUuid())).andReturn(mockDrive);
+      }
+      
+      replay(api);
+      
+      ServerInfoToNodeMetadata function = new ServerInfoToNodeMetadata(new ServerDriveToVolume(api), new NICToAddress(), serverStatusToNodeStatus);
+      // The jclouds method to compare nodes only compares the ID.
+      // Specific assertions for the rest of the image fields must be added here to properly
+      // verify the conversion function
+      assertEquals(function.apply(input), expected);
+      
+      verify(api);
    }
 }

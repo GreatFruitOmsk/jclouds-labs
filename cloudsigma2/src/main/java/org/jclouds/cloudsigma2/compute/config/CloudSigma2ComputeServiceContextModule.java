@@ -48,6 +48,7 @@ import org.jclouds.compute.options.TemplateOptions;
 import org.jclouds.domain.Location;
 import org.jclouds.functions.IdentityFunction;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
@@ -81,14 +82,17 @@ public class CloudSigma2ComputeServiceContextModule extends
       bind(TemplateOptions.class).to(CloudSigma2TemplateOptions.class);
    }
 
-   private static final Map<ServerStatus, NodeMetadata.Status> serverStatusToNodeStatus = ImmutableMap
-         .<ServerStatus, NodeMetadata.Status> builder().put(ServerStatus.RUNNING, NodeMetadata.Status.RUNNING)
+   @VisibleForTesting
+   public static final Map<ServerStatus, NodeMetadata.Status> serverStatusToNodeStatus = ImmutableMap
+         .<ServerStatus, NodeMetadata.Status> builder()
+         .put(ServerStatus.RUNNING, NodeMetadata.Status.RUNNING)
          .put(ServerStatus.STARTING, NodeMetadata.Status.PENDING)
          .put(ServerStatus.STOPPING, NodeMetadata.Status.PENDING)
          .put(ServerStatus.STOPPED, NodeMetadata.Status.SUSPENDED)
          .put(ServerStatus.PAUSED, NodeMetadata.Status.SUSPENDED)
          .put(ServerStatus.UNAVAILABLE, NodeMetadata.Status.SUSPENDED)
-         .put(ServerStatus.UNRECOGNIZED, NodeMetadata.Status.UNRECOGNIZED).build();
+         .put(ServerStatus.UNRECOGNIZED, NodeMetadata.Status.UNRECOGNIZED)
+         .build();
 
    @Provides
    @Singleton
@@ -96,10 +100,14 @@ public class CloudSigma2ComputeServiceContextModule extends
       return serverStatusToNodeStatus;
    }
 
-   private static final Map<DriveStatus, Image.Status> driveStatusToImageStatus = ImmutableMap
-         .<DriveStatus, Image.Status> builder().put(DriveStatus.MOUNTED, Image.Status.AVAILABLE)
-         .put(DriveStatus.UNMOUNTED, Image.Status.UNRECOGNIZED).put(DriveStatus.COPYING, Image.Status.PENDING)
-         .put(DriveStatus.UNAVAILABLE, Image.Status.ERROR).build();
+   @VisibleForTesting
+   public static final Map<DriveStatus, Image.Status> driveStatusToImageStatus = ImmutableMap
+         .<DriveStatus, Image.Status> builder()
+         .put(DriveStatus.MOUNTED, Image.Status.AVAILABLE)
+         .put(DriveStatus.UNMOUNTED, Image.Status.UNRECOGNIZED)
+         .put(DriveStatus.COPYING, Image.Status.PENDING)
+         .put(DriveStatus.UNAVAILABLE, Image.Status.ERROR)
+         .build();
 
    @Provides
    @Singleton

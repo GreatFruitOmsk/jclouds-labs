@@ -16,22 +16,26 @@
  */
 package org.jclouds.cloudsigma2.compute.functions;
 
-import com.google.common.collect.ImmutableList;
-import com.google.inject.Guice;
-import org.jclouds.cloudsigma2.domain.*;
-import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import static org.testng.Assert.assertEquals;
 
 import java.net.URI;
 import java.util.List;
 
-@Test
-public class NICToAddressTest {
+import org.jclouds.cloudsigma2.domain.FirewallPolicy;
+import org.jclouds.cloudsigma2.domain.FirewallRule;
+import org.jclouds.cloudsigma2.domain.IP;
+import org.jclouds.cloudsigma2.domain.IPConfiguration;
+import org.jclouds.cloudsigma2.domain.IPConfigurationType;
+import org.jclouds.cloudsigma2.domain.NIC;
+import org.jclouds.cloudsigma2.domain.VLANInfo;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+import org.testng.collections.Lists;
 
-   private static final NICToAddress NIC_TO_ADDRESS = Guice
-         .createInjector()
-         .getInstance(NICToAddress.class);
+import com.google.common.collect.ImmutableList;
+
+@Test(groups = "unit", testName = "NICToAddressTest")
+public class NICToAddressTest {
 
    private List<NIC> input;
    private List<String> expected;
@@ -75,12 +79,13 @@ public class NICToAddressTest {
                         .build())
                   .build());
 
-      expected = ImmutableList.of(null, null, "1.2.3.4", "2001:0db8:0000:0000:0000:ff00:0042:8329");
+      expected = Lists.newArrayList(null, null, "1.2.3.4", "2001:0db8:0000:0000:0000:ff00:0042:8329");
    }
 
-   public void test() {
+   public void testConvertNICs() {
+      NICToAddress function = new NICToAddress();
       for (int i = 0; i < input.size() -1; i++) {
-         Assert.assertEquals(NIC_TO_ADDRESS.apply(input.get(i)), expected.get(i));
+         assertEquals(function.apply(input.get(i)), expected.get(i));
       }
    }
 }
