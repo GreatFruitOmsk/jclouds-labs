@@ -79,11 +79,11 @@ public class ServerInfoToNodeMetadataTest {
             .build();
 
       expected = new NodeMetadataBuilder()
-            .id("a19a425f-9e92-42f6-89fb-6361203071bb")
+            .ids("a19a425f-9e92-42f6-89fb-6361203071bb")
             .name("test_acc_full_server")
             .status(NodeMetadata.Status.SUSPENDED)
             .hardware(new HardwareBuilder()
-                  .id("a19a425f-9e92-42f6-89fb-6361203071bb")
+                  .ids("a19a425f-9e92-42f6-89fb-6361203071bb")
                   .processor(new Processor(1, 1000))
                   .ram(268435456)
                   .volumes(ImmutableSet.of(

@@ -45,7 +45,7 @@ public class LibraryDriveToImage implements Function<LibraryDrive, Image> {
    @Override
    public Image apply(LibraryDrive libraryDrive) {
       return new ImageBuilder()
-         .id(libraryDrive.getUuid())
+         .ids(libraryDrive.getUuid())
          .userMetadata(libraryDrive.getMeta())
          .name(libraryDrive.getName())
          .description(libraryDrive.getDescription())

@@ -52,7 +52,7 @@ public class LibraryDriveToImageTest {
             .build();
 
       expected = new ImageBuilder()
-            .id("0bc6b02c-7ea2-4c5c-bf07-41c4cec2797d")
+            .ids("0bc6b02c-7ea2-4c5c-bf07-41c4cec2797d")
             .userMetadata(ImmutableMap.of("test_key", "test_value",
                   "sample key", "sample value"))
             .name("Debian 7.3 Server")

@@ -55,13 +55,13 @@ public class ServerInfoToNodeMetadata implements Function<ServerInfo, NodeMetada
    public NodeMetadata apply(ServerInfo serverInfo) {
       NodeMetadataBuilder builder = new NodeMetadataBuilder();
 
-      builder.id(serverInfo.getUuid());
+      builder.ids(serverInfo.getUuid());
       builder.name(serverInfo.getName());
 
       // TODO: Once we have the "listHardwareProfiles" method, make sure this matches with one of the
       // hardwares listed there.
       builder.hardware(new HardwareBuilder()
-         .id(serverInfo.getUuid())
+         .ids(serverInfo.getUuid())
             .processor(new Processor(1, serverInfo.getCpu()))
             .ram(serverInfo.getMemory().intValue())
             .volumes(Iterables.transform(serverInfo.getDrives(), serverDriveToVolume))
