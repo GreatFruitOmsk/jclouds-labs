@@ -492,11 +492,6 @@ public class CloudSigma2ApiLiveTest extends BaseApiLiveTest<CloudSigma2Api> {
    }
 
    @Test(dependsOnMethods = {"testCreateTags"})
-   public void testListTagsInfo() throws Exception {
-      assertNotNull(api.listTagsInfo());
-   }
-
-   @Test(dependsOnMethods = {"testCreateTags"})
    public void testGetTagInfo() throws Exception {
       for (Tag tag : api.listTags().concat()) {
          assertNotNull(api.getTagInfo(tag.getUuid()));

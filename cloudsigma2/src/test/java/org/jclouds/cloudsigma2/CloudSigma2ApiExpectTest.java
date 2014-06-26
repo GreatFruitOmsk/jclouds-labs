@@ -1276,50 +1276,6 @@ public class CloudSigma2ApiExpectTest extends BaseRestApiExpectTest<CloudSigma2A
    }
 
    @Test
-   public void testListTagsInfo() throws Exception {
-      CloudSigma2Api api = requestsSendResponses(
-            getBuilder()
-                  .endpoint(endpoint + "tags/detail/")
-                  .build(),
-            responseBuilder()
-                  .payload(payloadFromResourceWithContentType("/tags-detail-first-page.json",
-                        MediaType.APPLICATION_JSON))
-                  .build(),
-            getBuilder()
-                  .endpoint(endpoint + "tags/detail/")
-                  .addQueryParam("limit", "1")
-                  .addQueryParam("offset", "1")
-                  .build(),
-            responseBuilder()
-                  .payload(payloadFromResourceWithContentType("/tags-detail-last-page.json",
-                        MediaType.APPLICATION_JSON))
-                  .build());
-
-
-      List<Tag> tags = api.listTagsInfo().concat().toList();
-
-      assertEquals(tags.size(), 2);
-      assertEquals(tags.get(0).getUuid(), "956e2ca0-dee3-4b3f-a1be-a6e86f90946f");
-      assertEquals(tags.get(1).getUuid(), "68bb0cfc-0c76-4f37-847d-7bb705c5ae46");
-   }
-
-
-   @Test
-   public void testListTagsInfoPaginatedCollection() throws Exception {
-      CloudSigma2Api api = requestSendsResponse(
-            getBuilder()
-                  .endpoint(endpoint + "tags/detail/?limit=2&offset=2")
-                  .build(),
-            responseBuilder()
-                  .payload(payloadFromResourceWithContentType("/tags-detail.json", MediaType.APPLICATION_JSON))
-                  .build());
-
-      for (Tag tag : api.listTagsInfo(new PaginationOptions.Builder().limit(2).offset(2).build())) {
-         assertNotNull(tag);
-      }
-   }
-
-   @Test
    public void testGetTagInfo() throws Exception {
       String uuid = "68bb0cfc-0c76-4f37-847d-7bb705c5ae46";
       CloudSigma2Api api = requestSendsResponse(

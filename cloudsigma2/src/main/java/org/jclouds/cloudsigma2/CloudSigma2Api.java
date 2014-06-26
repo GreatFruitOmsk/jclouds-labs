@@ -785,31 +785,6 @@ public interface CloudSigma2Api extends Closeable {
    PaginatedCollection<Tag> listTags(PaginationOptions options);
 
    /**
-    * Gets the detailed list of tags with additional information to which the authenticated user has access,
-    * like the tagged resource
-    *
-    * @return detailed listings of your tags
-    */
-   @Named("tag:listTagsInfo")
-   @GET
-   @Path("/tags/detail/")
-   @ResponseParser(ParseTags.class)
-   @Transform(ParseTags.ToPagedIterableInfo.class)
-   PagedIterable<Tag> listTagsInfo();
-
-   /**
-    * Gets the detailed list of tags with additional information to which the authenticated user has access,
-    * like the tagged resource
-    *
-    * @return PaginatedCollection of detailed tags
-    */
-   @Named("tag:listTagsInfo")
-   @GET
-   @Path("/tags/detail/")
-   @ResponseParser(ParseTags.class)
-   PaginatedCollection<Tag> listTagsInfo(PaginationOptions options);
-
-   /**
     * Gets detailed information for tag identified by tag uuid.
     *
     * @param uuid tag uuid
