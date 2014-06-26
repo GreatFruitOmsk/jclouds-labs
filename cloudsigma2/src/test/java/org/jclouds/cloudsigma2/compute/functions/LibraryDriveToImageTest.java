@@ -63,6 +63,8 @@ public class LibraryDriveToImageTest {
                   .arch("64")
                   .family(OsFamily.LINUX)
                   .version("7.3")
+                  .description("Debian 7.3 Server - amd64 Pre-Installed English with Python, SSH and VirtIO support. " +
+                        "Last update 2014/02/15.")
                   .build())
             .status(Image.Status.UNRECOGNIZED)
             .build();
@@ -70,9 +72,12 @@ public class LibraryDriveToImageTest {
 
    public void testConvertLibraryDrive() {
       LibraryDriveToImage function = new LibraryDriveToImage(driveStatusToImageStatus);
-      // The jclouds method to compare images only compares the ID.
-      // Specific assertions for the rest of the image fields must be added here to properly
-      // verify the conversion function
-      assertEquals(function.apply(input), expected);
+      Image converted = function.apply(input);
+      assertEquals(converted, expected);
+      assertEquals(converted.getUserMetadata(), expected.getUserMetadata());
+      assertEquals(converted.getName(), expected.getName());
+      assertEquals(converted.getDescription(), expected.getDescription());
+      assertEquals(converted.getStatus(), expected.getStatus());
+      assertEquals(converted.getOperatingSystem(), expected.getOperatingSystem());
    }
 }

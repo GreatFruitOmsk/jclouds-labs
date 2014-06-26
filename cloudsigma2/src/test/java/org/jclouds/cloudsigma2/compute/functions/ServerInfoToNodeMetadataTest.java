@@ -120,12 +120,15 @@ public class ServerInfoToNodeMetadataTest {
       
       replay(api);
       
-      ServerInfoToNodeMetadata function = new ServerInfoToNodeMetadata(new ServerDriveToVolume(api), new NICToAddress(), serverStatusToNodeStatus);
-      // The jclouds method to compare nodes only compares the ID.
-      // Specific assertions for the rest of the image fields must be added here to properly
-      // verify the conversion function
-      assertEquals(function.apply(input), expected);
-      
+      ServerInfoToNodeMetadata function = new ServerInfoToNodeMetadata(new ServerDriveToVolume(api), new NICToAddress(),
+            serverStatusToNodeStatus);
+      NodeMetadata converted = function.apply(input);
+      assertEquals(converted, expected);
+      assertEquals(converted.getName(), expected.getName());
+      assertEquals(converted.getStatus(), expected.getStatus());
+      assertEquals(converted.getPublicAddresses(), expected.getPublicAddresses());
+      assertEquals(converted.getHardware(), expected.getHardware());
+
       verify(api);
    }
 }
