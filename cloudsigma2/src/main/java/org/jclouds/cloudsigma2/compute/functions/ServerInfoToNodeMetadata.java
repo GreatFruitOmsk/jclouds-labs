@@ -26,6 +26,7 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.jclouds.cloudsigma2.domain.ServerDrive;
 import org.jclouds.cloudsigma2.domain.ServerInfo;
 import org.jclouds.cloudsigma2.domain.ServerStatus;
 import org.jclouds.compute.domain.HardwareBuilder;
@@ -61,7 +62,7 @@ public class ServerInfoToNodeMetadata implements Function<ServerInfo, NodeMetada
       // TODO: Once we have the "listHardwareProfiles" method, make sure this matches with one of the
       // hardwares listed there.
       builder.hardware(new HardwareBuilder()
-         .ids(serverInfo.getUuid())
+            .ids(serverInfo.getUuid())
             .processor(new Processor(1, serverInfo.getCpu()))
             .ram(serverInfo.getMemory().intValue())
             .volumes(Iterables.transform(serverInfo.getDrives(), serverDriveToVolume))
@@ -69,15 +70,19 @@ public class ServerInfoToNodeMetadata implements Function<ServerInfo, NodeMetada
       
       builder.status(serverStatusToNodeStatus.get(serverInfo.getStatus()));
       builder.publicAddresses(filter(transform(serverInfo.getNics(), nicToAddress), notNull()));
-      
-      /*
-       * TODO: Try to populate the credentials here. When creating new servers, the ComputeService will already
-       * set the credentials. We should be able to recover them here either:
-       * - From the API.
-       * - If the API does not support it, we could store some info in the metadata (in the ComputeService) and read it here. 
-       */
+
       builder.credentials(null);
       
+      ServerDrive serverBootDrive = null;
+      for (ServerDrive serverDrive : serverInfo.getDrives()) {
+         if (serverDrive.getBootOrder() > 0 &&
+               (serverBootDrive == null || serverDrive.getBootOrder() < serverBootDrive.getBootOrder())) {
+            serverBootDrive = serverDrive;
+         }
+      }
+      if (serverBootDrive != null) {
+         builder.imageId(serverBootDrive.getDriveUuid());
+      }
       return builder.build();
    }
 }

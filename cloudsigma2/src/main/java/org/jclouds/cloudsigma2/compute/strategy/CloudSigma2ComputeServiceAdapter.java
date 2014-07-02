@@ -89,11 +89,11 @@ public class CloudSigma2ComputeServiceAdapter implements
       Image image = template.getImage();
       Hardware hardware = template.getHardware();
 
-      logger.debug(">> cloning library drive %s...", image.getProviderId());
-
       LibraryDrive drive = api.getLibraryDrive(image.getProviderId());
 
       if (!drive.getMedia().equals(MediaType.CDROM)) {
+         logger.debug(">> cloning library drive %s...", image.getProviderId());
+
          drive = api.cloneLibraryDrive(image.getProviderId(),
                new LibraryDrive.Builder()
                      .name(image.getName())
@@ -144,21 +144,7 @@ public class CloudSigma2ComputeServiceAdapter implements
             .build());
       api.startServer(serverInfo.getUuid());
 
-      /*
-       * TODO: The loginCredentials to be returned here are the ones that jclouds (and the final users) can use to
-       * access the node, commonly via SSH in Unix systems.
-       * jclouds will use these credentials to access the node to run the scripts (if configured) and bootstrap the
-       * node, so we should make sure those are the good ones.
-       * 
-       * To accomplish this, there are several things to take into account:
-       *  - If the TemplateOptions object has some "overrideLogin" option set, use those values to create the server,
-       *    if the api supports it.
-       *  - If the TemplateOptions contain the "authorizePublicKey" option, return the username, and if available, the private key.
-       *  - Otherwise return the default SSH username and password for that server.
-       */
       return new NodeAndInitialCredentials<ServerInfo>(serverInfo, serverInfo.getUuid(), LoginCredentials.builder()
-            .password(serverInfo.getVncPassword())
-            .authenticateSudo(true)
             .build());
    }
 
