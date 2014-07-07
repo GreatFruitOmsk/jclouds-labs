@@ -14,10 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.cloudsigma2.compute.options;
+package org.jclouds.cloudsigma2.compute;
 
-import org.jclouds.compute.options.TemplateOptions;
+import org.testng.annotations.Test;
 
-public class CloudSigma2TemplateOptions extends TemplateOptions {
+@Test(groups = "live", testName = "CloudSigma2LasVegasComputeServiceLiveTest")
+public class CloudSigma2LasVegasComputeServiceLiveTest extends CloudSigma2ComputeServiceLiveTest {
 
+   public CloudSigma2LasVegasComputeServiceLiveTest() {
+      provider = "cloudsigma2-lvs";
+      group = "cloudsigma2";
+   }
 }

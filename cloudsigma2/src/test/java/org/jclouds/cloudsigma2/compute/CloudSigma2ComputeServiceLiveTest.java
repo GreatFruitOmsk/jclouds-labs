@@ -14,10 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.cloudsigma2.compute.options;
+package org.jclouds.cloudsigma2.compute;
 
-import org.jclouds.compute.options.TemplateOptions;
+import org.jclouds.compute.internal.BaseComputeServiceLiveTest;
+import org.jclouds.sshj.config.SshjSshClientModule;
+import org.testng.annotations.Test;
 
-public class CloudSigma2TemplateOptions extends TemplateOptions {
+import com.google.inject.Module;
 
+@Test(groups = "live", testName = "CloudSigma2ComputeServiceLiveTest")
+public class CloudSigma2ComputeServiceLiveTest extends BaseComputeServiceLiveTest {
+
+   public CloudSigma2ComputeServiceLiveTest() {
+      provider = "cloudsigma2";
+   }
+
+   @Override
+   protected Module getSshModule() {
+      return new SshjSshClientModule();
+   }
+
+   // TODO nacx: Find the image and a default config to be used in the tests
 }
