@@ -50,6 +50,7 @@ import org.jclouds.functions.IdentityFunction;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Provides;
@@ -84,15 +85,13 @@ public class CloudSigma2ComputeServiceContextModule extends
 
    @VisibleForTesting
    public static final Map<ServerStatus, NodeMetadata.Status> serverStatusToNodeStatus = ImmutableMap
-         .<ServerStatus, NodeMetadata.Status> builder()
-         .put(ServerStatus.RUNNING, NodeMetadata.Status.RUNNING)
+         .<ServerStatus, NodeMetadata.Status> builder().put(ServerStatus.RUNNING, NodeMetadata.Status.RUNNING)
          .put(ServerStatus.STARTING, NodeMetadata.Status.PENDING)
          .put(ServerStatus.STOPPING, NodeMetadata.Status.PENDING)
          .put(ServerStatus.STOPPED, NodeMetadata.Status.SUSPENDED)
          .put(ServerStatus.PAUSED, NodeMetadata.Status.SUSPENDED)
          .put(ServerStatus.UNAVAILABLE, NodeMetadata.Status.SUSPENDED)
-         .put(ServerStatus.UNRECOGNIZED, NodeMetadata.Status.UNRECOGNIZED)
-         .build();
+         .put(ServerStatus.UNRECOGNIZED, NodeMetadata.Status.UNRECOGNIZED).build();
 
    @Provides
    @Singleton
@@ -102,12 +101,9 @@ public class CloudSigma2ComputeServiceContextModule extends
 
    @VisibleForTesting
    public static final Map<DriveStatus, Image.Status> driveStatusToImageStatus = ImmutableMap
-         .<DriveStatus, Image.Status> builder()
-         .put(DriveStatus.MOUNTED, Image.Status.AVAILABLE)
-         .put(DriveStatus.UNMOUNTED, Image.Status.UNRECOGNIZED)
-         .put(DriveStatus.COPYING, Image.Status.PENDING)
-         .put(DriveStatus.UNAVAILABLE, Image.Status.ERROR)
-         .build();
+         .<DriveStatus, Image.Status> builder().put(DriveStatus.MOUNTED, Image.Status.AVAILABLE)
+         .put(DriveStatus.UNMOUNTED, Image.Status.UNRECOGNIZED).put(DriveStatus.COPYING, Image.Status.PENDING)
+         .put(DriveStatus.UNAVAILABLE, Image.Status.ERROR).build();
 
    @Provides
    @Singleton
@@ -120,21 +116,31 @@ public class CloudSigma2ComputeServiceContextModule extends
    @Named(TIMEOUT_DRIVE_CLONED)
    protected Predicate<DriveInfo> provideDriveClonedPredicate(final CloudSigma2Api api,
          @Named(TIMEOUT_DRIVE_CLONED) long driveClonedTimeout) {
-      return retry(new Predicate<DriveInfo>() {
-         @Override
-         public boolean apply(DriveInfo input) {
-            DriveInfo drive = api.getDriveInfo(input.getUuid());
-            switch (drive.getStatus()) {
-               case COPYING:
-               case UNAVAILABLE:
-                  return false;
-               case MOUNTED:
-               case UNMOUNTED:
-                  return true;
-               default:
-                  throw new IllegalStateException("Resource is in invalid status: " + drive.getStatus());
-            }
+      return retry(new DriveCloned(api), driveClonedTimeout);
+   }
+
+   @VisibleForTesting
+   static class DriveCloned implements Predicate<DriveInfo> {
+
+      private final CloudSigma2Api api;
+
+      public DriveCloned(CloudSigma2Api api) {
+         this.api = Preconditions.checkNotNull(api, "api");
+      }
+
+      @Override
+      public boolean apply(DriveInfo input) {
+         DriveInfo drive = api.getDriveInfo(input.getUuid());
+         switch (drive.getStatus()) {
+            case COPYING:
+            case UNAVAILABLE:
+               return false;
+            case MOUNTED:
+            case UNMOUNTED:
+               return true;
+            default:
+               throw new IllegalStateException("Resource is in invalid status: " + drive.getStatus());
          }
-      }, driveClonedTimeout);
+      }
    }
 }
