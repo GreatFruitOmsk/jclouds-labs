@@ -27,6 +27,7 @@ import static org.jclouds.cloudsigma2.config.CloudSigma2Properties.TIMEOUT_DRIVE
 
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 import javax.annotation.Resource;
@@ -67,9 +68,11 @@ import org.jclouds.logging.Logger;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSet.Builder;
+import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
@@ -154,6 +157,14 @@ public class CloudSigma2ComputeServiceAdapter implements
             .build();
          nics.add(nic);
       }
+      
+      
+      // Cloud init images expect the public key in the server metadata
+      Map<String, String> metadata = Maps.newLinkedHashMap();
+      if (!Strings.isNullOrEmpty(options.getPublicKey())) {
+         metadata.put("ssh_public_key", options.getPublicKey());
+      }
+      metadata.putAll(options.getUserMetadata());
 
       String vncPassword = Optional.fromNullable(options.getLoginPassword()).or(defaultVncPassword);
       
@@ -163,7 +174,7 @@ public class CloudSigma2ComputeServiceAdapter implements
             .memory(BigInteger.valueOf(hardware.getRam()).multiply(BigInteger.valueOf(1024 * 1024)))
             .drives(ImmutableList.of(drive.toServerDrive(1, "0:1", options.getDeviceEmulationType())))
             .nics(nics.build())
-            .meta(options.getUserMetadata())
+            .meta(metadata)
             .tags(ImmutableList.copyOf(options.getTags()))
             .vncPassword(vncPassword)
             .build());
