@@ -16,6 +16,10 @@
  */
 package org.jclouds.cloudsigma2.compute;
 
+import org.jclouds.compute.domain.ExecResponse;
+import org.jclouds.compute.domain.NodeMetadata;
+import org.jclouds.compute.domain.Template;
+import org.jclouds.compute.domain.TemplateBuilder;
 import org.jclouds.compute.internal.BaseComputeServiceLiveTest;
 import org.jclouds.sshj.config.SshjSshClientModule;
 import org.testng.annotations.Test;
@@ -27,11 +31,27 @@ public class CloudSigma2ComputeServiceLiveTest extends BaseComputeServiceLiveTes
 
    public CloudSigma2ComputeServiceLiveTest() {
       provider = "cloudsigma2";
+      
    }
 
    @Override
    protected Module getSshModule() {
       return new SshjSshClientModule();
+   }
+
+   // CloudSigma templates require manual interaction to change the password on the first login.
+   // The only way to automatically authenticate to a server is to use an image that supports Cloud Init
+   // and provide the public key
+   @Override
+   protected Template buildTemplate(TemplateBuilder templateBuilder) {
+      Template template = super.buildTemplate(templateBuilder);
+      template.getOptions().authorizePublicKey(keyPair.get("public"));
+      return template;
+   }
+
+   @Override
+   protected void checkResponseEqualsHostname(ExecResponse execResponse, NodeMetadata node1) {
+      // TODO: Does CloudSigma return the hsotname in the servers?
    }
 
 }

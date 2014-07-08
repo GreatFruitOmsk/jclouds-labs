@@ -24,9 +24,11 @@ import static org.testng.Assert.assertEquals;
 
 import java.math.BigInteger;
 import java.net.URI;
+import java.util.Map;
 
 import org.easymock.EasyMock;
 import org.jclouds.cloudsigma2.CloudSigma2Api;
+import org.jclouds.cloudsigma2.CloudSigma2ApiMetadata;
 import org.jclouds.cloudsigma2.domain.DeviceEmulationType;
 import org.jclouds.cloudsigma2.domain.Drive;
 import org.jclouds.cloudsigma2.domain.DriveInfo;
@@ -42,23 +44,33 @@ import org.jclouds.compute.domain.NodeMetadataBuilder;
 import org.jclouds.compute.domain.Processor;
 import org.jclouds.compute.domain.Volume;
 import org.jclouds.compute.domain.VolumeBuilder;
+import org.jclouds.compute.functions.GroupNamingConvention;
+import org.jclouds.domain.Credentials;
+import org.jclouds.domain.LoginCredentials;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.name.Names;
 
 @Test(groups = "unit", testName = "ServerInfoToNodeMetadataTest")
 public class ServerInfoToNodeMetadataTest {
 
    private ServerInfo input;
    private NodeMetadata expected;
+   private Map<String, Credentials> credentialStore;
+   private GroupNamingConvention.Factory namingConvention;
+   private LoginCredentials credentials = LoginCredentials.builder().user("ubuntu").password("ubuntu").build();
 
    @BeforeMethod
    public void setUp() throws Exception {
       input = new ServerInfo.Builder()
             .uuid("a19a425f-9e92-42f6-89fb-6361203071bb")
-            .name("test_acc_full_server")
+            .name("cloudsigma2-test_acc_full_server")
             .cpu(1000)
             .memory(new BigInteger("268435456"))
             .status(ServerStatus.STOPPED)
@@ -76,11 +88,13 @@ public class ServerInfoToNodeMetadataTest {
                         .ip(new IP.Builder().uuid("1.2.3.4").build())
                         .build())
                   .build()))
+             .meta(ImmutableMap.of("foo", "bar"))
             .build();
 
       expected = new NodeMetadataBuilder()
             .ids("a19a425f-9e92-42f6-89fb-6361203071bb")
-            .name("test_acc_full_server")
+            .name("cloudsigma2-test_acc_full_server")
+            .group("cloudsigma2")
             .status(NodeMetadata.Status.SUSPENDED)
             .hardware(new HardwareBuilder()
                   .ids("a19a425f-9e92-42f6-89fb-6361203071bb")
@@ -103,7 +117,18 @@ public class ServerInfoToNodeMetadataTest {
                               .build()))
                   .build())
             .publicAddresses(ImmutableSet.of("1.2.3.4"))
+            .userMetadata(ImmutableMap.of("foo", "bar"))
+            .credentials(credentials)
             .build();
+      
+      namingConvention = Guice.createInjector(new AbstractModule() {
+         @Override
+         protected void configure() {
+            Names.bindProperties(binder(), new CloudSigma2ApiMetadata().getDefaultProperties());
+         }
+      }).getInstance(GroupNamingConvention.Factory.class);
+      
+      credentialStore = ImmutableMap.of("node#a19a425f-9e92-42f6-89fb-6361203071bb", (Credentials) credentials);
    }
 
    public void testConvertServerInfo() {
@@ -121,13 +146,16 @@ public class ServerInfoToNodeMetadataTest {
       replay(api);
       
       ServerInfoToNodeMetadata function = new ServerInfoToNodeMetadata(new ServerDriveToVolume(api), new NICToAddress(),
-            serverStatusToNodeStatus);
+            serverStatusToNodeStatus, namingConvention, credentialStore);
+      
       NodeMetadata converted = function.apply(input);
       assertEquals(converted, expected);
       assertEquals(converted.getName(), expected.getName());
       assertEquals(converted.getStatus(), expected.getStatus());
       assertEquals(converted.getPublicAddresses(), expected.getPublicAddresses());
       assertEquals(converted.getHardware(), expected.getHardware());
+      assertEquals(converted.getCredentials(), expected.getCredentials());
+      assertEquals(converted.getGroup(), expected.getGroup());
 
       verify(api);
    }

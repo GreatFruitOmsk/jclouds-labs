@@ -200,7 +200,7 @@ public class CloudSigma2ComputeServiceAdapter implements
       for (int ram : ramSetBuilder.build()) {
          for (double cpu : cpuSetBuilder.build()) {
             hardware.add(new HardwareBuilder()
-                  .id(String.format("cpu=%f,ram=%d", cpu, ram))
+                  .ids(String.format("cpu=%f,ram=%d", cpu, ram))
                   .processor(new Processor(1, cpu))
                   .ram(ram)
                   .volumes(ImmutableList.<Volume> of(new VolumeImpl(null, true, false)))
@@ -233,6 +233,7 @@ public class CloudSigma2ComputeServiceAdapter implements
 
    @Override
    public void destroyNode(String uuid) {
+      api.stopServer(uuid);
       api.deleteServer(uuid);
    }
 

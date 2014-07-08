@@ -59,7 +59,7 @@ public class CloudSigma2ApiMetadata extends BaseHttpApiMetadata<CloudSigma2Api> 
       // from a race condition applying the password set script
       properties.setProperty("jclouds.ssh.max-retries", "7");
       properties.setProperty("jclouds.ssh.retry-auth", "true");
-      properties.setProperty(TEMPLATE, "osFamily=UBUNTU,imageNameMatches=.*[Aa]utomated SSH Access.*,os64Bit=true");
+      properties.setProperty(TEMPLATE, "osFamily=UBUNTU,imageNameMatches=.*[Cc]loud [Ii]mage.*,os64Bit=true");
       return properties;
    }
 

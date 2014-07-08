@@ -33,6 +33,9 @@ import org.jclouds.compute.domain.HardwareBuilder;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.NodeMetadataBuilder;
 import org.jclouds.compute.domain.Processor;
+import org.jclouds.compute.functions.GroupNamingConvention;
+import org.jclouds.domain.Credentials;
+import org.jclouds.domain.LoginCredentials;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
@@ -43,13 +46,19 @@ public class ServerInfoToNodeMetadata implements Function<ServerInfo, NodeMetada
    private final ServerDriveToVolume serverDriveToVolume;
    private final NICToAddress nicToAddress;
    private final Map<ServerStatus, NodeMetadata.Status> serverStatusToNodeStatus;
+   private final GroupNamingConvention groupNamingConvention;
+   private final Map<String, Credentials> credentialStore;
 
    @Inject
    public ServerInfoToNodeMetadata(ServerDriveToVolume serverDriveToVolume, NICToAddress nicToAddress,
-         Map<ServerStatus, NodeMetadata.Status> serverStatusToNodeStatus) {
+         Map<ServerStatus, NodeMetadata.Status> serverStatusToNodeStatus,
+         GroupNamingConvention.Factory groupNamingConvention, Map<String, Credentials> credentialStore) {
       this.serverDriveToVolume = checkNotNull(serverDriveToVolume, "serverDriveToVolume");
       this.nicToAddress = checkNotNull(nicToAddress, "nicToAddress");
       this.serverStatusToNodeStatus = checkNotNull(serverStatusToNodeStatus, "serverStatusToNodeStatus");
+      this.groupNamingConvention = checkNotNull(groupNamingConvention, "groupNamingConvention")
+            .createWithoutPrefix();
+      this.credentialStore = checkNotNull(credentialStore, "credentialStore");
    }
 
    @Override
@@ -58,6 +67,7 @@ public class ServerInfoToNodeMetadata implements Function<ServerInfo, NodeMetada
 
       builder.ids(serverInfo.getUuid());
       builder.name(serverInfo.getName());
+      builder.group(groupNamingConvention.extractGroup(serverInfo.getName()));
 
       // TODO: Once we have the "listHardwareProfiles" method, make sure this matches with one of the
       // hardwares listed there.
@@ -68,11 +78,17 @@ public class ServerInfoToNodeMetadata implements Function<ServerInfo, NodeMetada
             .volumes(Iterables.transform(serverInfo.getDrives(), serverDriveToVolume))
             .build());
       
+      builder.userMetadata(serverInfo.getMeta());
       builder.status(serverStatusToNodeStatus.get(serverInfo.getStatus()));
       builder.publicAddresses(filter(transform(serverInfo.getNics(), nicToAddress), notNull()));
-
-      builder.credentials(null);
       
+      // CloudSigma does not provide a way to get the credentials.
+      // Try to return them from the credential store
+      Credentials credentials = credentialStore.get("node#" + serverInfo.getUuid());
+      if (credentials instanceof LoginCredentials) {
+         builder.credentials(LoginCredentials.class.cast(credentials));
+      }
+
       ServerDrive serverBootDrive = null;
       for (ServerDrive serverDrive : serverInfo.getDrives()) {
          if (serverDrive.getBootOrder() > 0 &&
@@ -83,6 +99,7 @@ public class ServerInfoToNodeMetadata implements Function<ServerInfo, NodeMetada
       if (serverBootDrive != null) {
          builder.imageId(serverBootDrive.getDriveUuid());
       }
+      
       return builder.build();
    }
 }
