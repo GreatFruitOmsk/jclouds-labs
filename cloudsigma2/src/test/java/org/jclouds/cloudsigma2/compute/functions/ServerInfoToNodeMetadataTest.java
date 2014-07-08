@@ -16,6 +16,7 @@
  */
 package org.jclouds.cloudsigma2.compute.functions;
 
+import static com.google.common.collect.Iterables.getOnlyElement;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
@@ -47,9 +48,11 @@ import org.jclouds.compute.domain.VolumeBuilder;
 import org.jclouds.compute.functions.GroupNamingConvention;
 import org.jclouds.domain.Credentials;
 import org.jclouds.domain.LoginCredentials;
+import org.jclouds.location.suppliers.all.JustProvider;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -65,9 +68,14 @@ public class ServerInfoToNodeMetadataTest {
    private Map<String, Credentials> credentialStore;
    private GroupNamingConvention.Factory namingConvention;
    private LoginCredentials credentials = LoginCredentials.builder().user("ubuntu").password("ubuntu").build();
+   private JustProvider justProvider;
 
    @BeforeMethod
    public void setUp() throws Exception {
+      CloudSigma2ApiMetadata metadata = new CloudSigma2ApiMetadata();
+      justProvider = new JustProvider(metadata.getId(), Suppliers.ofInstance(URI.create(metadata
+            .getDefaultEndpoint().get())), ImmutableSet.<String> of());
+      
       input = new ServerInfo.Builder()
             .uuid("a19a425f-9e92-42f6-89fb-6361203071bb")
             .name("cloudsigma2-test_acc_full_server")
@@ -88,7 +96,8 @@ public class ServerInfoToNodeMetadataTest {
                         .ip(new IP.Builder().uuid("1.2.3.4").build())
                         .build())
                   .build()))
-             .meta(ImmutableMap.of("foo", "bar"))
+             .meta(ImmutableMap.of("foo", "bar", "image_id", "image"))
+             .tags(ImmutableList.of("foo", "bar"))
             .build();
 
       expected = new NodeMetadataBuilder()
@@ -96,6 +105,8 @@ public class ServerInfoToNodeMetadataTest {
             .name("cloudsigma2-test_acc_full_server")
             .group("cloudsigma2")
             .status(NodeMetadata.Status.SUSPENDED)
+            .location(getOnlyElement(justProvider.get()))
+            .imageId("image")
             .hardware(new HardwareBuilder()
                   .ids("a19a425f-9e92-42f6-89fb-6361203071bb")
                   .processor(new Processor(1, 1000))
@@ -117,7 +128,8 @@ public class ServerInfoToNodeMetadataTest {
                               .build()))
                   .build())
             .publicAddresses(ImmutableSet.of("1.2.3.4"))
-            .userMetadata(ImmutableMap.of("foo", "bar"))
+            .userMetadata(ImmutableMap.of("foo", "bar", "image_id", "image"))
+            .tags(ImmutableList.of("foo", "bar"))
             .credentials(credentials)
             .build();
       
@@ -146,16 +158,19 @@ public class ServerInfoToNodeMetadataTest {
       replay(api);
       
       ServerInfoToNodeMetadata function = new ServerInfoToNodeMetadata(new ServerDriveToVolume(api), new NICToAddress(),
-            serverStatusToNodeStatus, namingConvention, credentialStore);
+            serverStatusToNodeStatus, namingConvention, credentialStore, justProvider);
       
       NodeMetadata converted = function.apply(input);
       assertEquals(converted, expected);
       assertEquals(converted.getName(), expected.getName());
       assertEquals(converted.getStatus(), expected.getStatus());
       assertEquals(converted.getPublicAddresses(), expected.getPublicAddresses());
+      assertEquals(converted.getImageId(), expected.getImageId());
       assertEquals(converted.getHardware(), expected.getHardware());
       assertEquals(converted.getCredentials(), expected.getCredentials());
       assertEquals(converted.getGroup(), expected.getGroup());
+      assertEquals(converted.getTags(), expected.getTags());
+      assertEquals(converted.getUserMetadata(), expected.getUserMetadata());
 
       verify(api);
    }

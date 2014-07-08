@@ -16,7 +16,9 @@
  */
 package org.jclouds.cloudsigma2.compute.config;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.jclouds.cloudsigma2.config.CloudSigma2Properties.TIMEOUT_DRIVE_CLONED;
+import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_SUSPENDED;
 import static org.jclouds.util.Predicates2.retry;
 
 import java.util.Map;
@@ -45,12 +47,13 @@ import org.jclouds.compute.domain.Image;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.Volume;
 import org.jclouds.compute.options.TemplateOptions;
+import org.jclouds.compute.reference.ComputeServiceConstants.PollPeriod;
+import org.jclouds.compute.reference.ComputeServiceConstants.Timeouts;
 import org.jclouds.domain.Location;
 import org.jclouds.functions.IdentityFunction;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Provides;
@@ -116,16 +119,25 @@ public class CloudSigma2ComputeServiceContextModule extends
    @Named(TIMEOUT_DRIVE_CLONED)
    protected Predicate<DriveInfo> provideDriveClonedPredicate(final CloudSigma2Api api,
          @Named(TIMEOUT_DRIVE_CLONED) long driveClonedTimeout) {
-      return retry(new DriveCloned(api), driveClonedTimeout);
+      return retry(new DriveClonedPredicate(api), driveClonedTimeout);
+   }
+   
+   @Provides
+   @Singleton
+   @Named(TIMEOUT_NODE_SUSPENDED)
+   protected Predicate<String> provideServerStoppedPredicate(final CloudSigma2Api api, Timeouts timeouts,
+         PollPeriod pollPeriod) {
+      return retry(new ServerStatusPredicate(api, ServerStatus.STOPPED), timeouts.nodeSuspended, pollPeriod.pollInitialPeriod,
+            pollPeriod.pollMaxPeriod);
    }
 
    @VisibleForTesting
-   static class DriveCloned implements Predicate<DriveInfo> {
+   static class DriveClonedPredicate implements Predicate<DriveInfo> {
 
       private final CloudSigma2Api api;
 
-      public DriveCloned(CloudSigma2Api api) {
-         this.api = Preconditions.checkNotNull(api, "api");
+      public DriveClonedPredicate(CloudSigma2Api api) {
+         this.api = checkNotNull(api, "api");
       }
 
       @Override
@@ -141,6 +153,24 @@ public class CloudSigma2ComputeServiceContextModule extends
             default:
                throw new IllegalStateException("Resource is in invalid status: " + drive.getStatus());
          }
+      }
+   }
+   
+   @VisibleForTesting
+   static class ServerStatusPredicate implements Predicate<String> {
+
+      private final CloudSigma2Api api;
+      private final ServerStatus status;
+
+      public ServerStatusPredicate(CloudSigma2Api api, ServerStatus status) {
+         this.api = checkNotNull(api, "api");
+         this.status = checkNotNull(status, "status");
+      }
+
+      @Override
+      public boolean apply(String input) {
+         ServerInfo serverInfo = api.getServerInfo(input);
+         return status.equals(serverInfo.getStatus());
       }
    }
 }

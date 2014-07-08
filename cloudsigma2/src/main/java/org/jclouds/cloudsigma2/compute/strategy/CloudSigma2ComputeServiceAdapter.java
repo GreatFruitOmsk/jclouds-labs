@@ -24,6 +24,7 @@ import static com.google.common.util.concurrent.Futures.allAsList;
 import static com.google.common.util.concurrent.Futures.getUnchecked;
 import static org.jclouds.cloudsigma2.config.CloudSigma2Properties.PROPERTY_VNC_PASSWORD;
 import static org.jclouds.cloudsigma2.config.CloudSigma2Properties.TIMEOUT_DRIVE_CLONED;
+import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_SUSPENDED;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -51,6 +52,7 @@ import org.jclouds.cloudsigma2.domain.LibraryDrive;
 import org.jclouds.cloudsigma2.domain.MediaType;
 import org.jclouds.cloudsigma2.domain.NIC;
 import org.jclouds.cloudsigma2.domain.ServerInfo;
+import org.jclouds.cloudsigma2.domain.ServerStatus;
 import org.jclouds.cloudsigma2.domain.VLANInfo;
 import org.jclouds.compute.ComputeServiceAdapter;
 import org.jclouds.compute.domain.Hardware;
@@ -88,16 +90,19 @@ public class CloudSigma2ComputeServiceAdapter implements
    private final ListeningExecutorService userExecutor;
    private final String defaultVncPassword;
    private final Predicate<DriveInfo> driveCloned;
+   private final Predicate<String> serverStopped;
 
    @Inject
    public CloudSigma2ComputeServiceAdapter(CloudSigma2Api api,
          @Named(Constants.PROPERTY_USER_THREADS) ListeningExecutorService userExecutor,
          @Named(PROPERTY_VNC_PASSWORD) String defaultVncPassword,
-         @Named(TIMEOUT_DRIVE_CLONED) Predicate<DriveInfo> driveCloned) {
+         @Named(TIMEOUT_DRIVE_CLONED) Predicate<DriveInfo> driveCloned,
+         @Named(TIMEOUT_NODE_SUSPENDED) Predicate<String> serverStopped) {
       this.api = checkNotNull(api, "api");
       this.userExecutor = checkNotNull(userExecutor, "userExecutor");
       this.defaultVncPassword = checkNotNull(defaultVncPassword, "defaultVncPassword");
       this.driveCloned = checkNotNull(driveCloned, "driveCloned");
+      this.serverStopped = checkNotNull(serverStopped, "serverStopped");
    }
 
    @Override
@@ -161,6 +166,7 @@ public class CloudSigma2ComputeServiceAdapter implements
       
       // Cloud init images expect the public key in the server metadata
       Map<String, String> metadata = Maps.newLinkedHashMap();
+      metadata.put("image_id", image.getProviderId());
       if (!Strings.isNullOrEmpty(options.getPublicKey())) {
          metadata.put("ssh_public_key", options.getPublicKey());
       }
@@ -234,12 +240,15 @@ public class CloudSigma2ComputeServiceAdapter implements
    @Override
    public void destroyNode(String uuid) {
       api.stopServer(uuid);
+      waitUntilServerIsStopped(uuid);
       api.deleteServer(uuid);
+      // TODO: Delete the drives?
    }
 
    @Override
    public void rebootNode(String uuid) {
       api.stopServer(uuid);
+      waitUntilServerIsStopped(uuid);
       api.startServer(uuid);
    }
 
@@ -275,5 +284,11 @@ public class CloudSigma2ComputeServiceAdapter implements
             }));
 
       return getUnchecked(futures);
+   }
+   
+   private void waitUntilServerIsStopped(String uuid) {
+      serverStopped.apply(uuid);
+      ServerInfo server = api.getServerInfo(uuid);
+      checkState(server.getStatus() == ServerStatus.STOPPED, "Resource is in invalid status: %s", server.getStatus());
    }
 }

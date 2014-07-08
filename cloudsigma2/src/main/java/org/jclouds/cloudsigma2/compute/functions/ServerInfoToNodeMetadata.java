@@ -19,6 +19,7 @@ package org.jclouds.cloudsigma2.compute.functions;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Predicates.notNull;
 import static com.google.common.collect.Iterables.filter;
+import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.google.common.collect.Iterables.transform;
 
 import java.util.Map;
@@ -36,6 +37,7 @@ import org.jclouds.compute.domain.Processor;
 import org.jclouds.compute.functions.GroupNamingConvention;
 import org.jclouds.domain.Credentials;
 import org.jclouds.domain.LoginCredentials;
+import org.jclouds.location.suppliers.all.JustProvider;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
@@ -48,17 +50,19 @@ public class ServerInfoToNodeMetadata implements Function<ServerInfo, NodeMetada
    private final Map<ServerStatus, NodeMetadata.Status> serverStatusToNodeStatus;
    private final GroupNamingConvention groupNamingConvention;
    private final Map<String, Credentials> credentialStore;
+   private final JustProvider locations;
 
    @Inject
    public ServerInfoToNodeMetadata(ServerDriveToVolume serverDriveToVolume, NICToAddress nicToAddress,
          Map<ServerStatus, NodeMetadata.Status> serverStatusToNodeStatus,
-         GroupNamingConvention.Factory groupNamingConvention, Map<String, Credentials> credentialStore) {
+         GroupNamingConvention.Factory groupNamingConvention, Map<String, Credentials> credentialStore,
+         JustProvider locations) {
       this.serverDriveToVolume = checkNotNull(serverDriveToVolume, "serverDriveToVolume");
       this.nicToAddress = checkNotNull(nicToAddress, "nicToAddress");
       this.serverStatusToNodeStatus = checkNotNull(serverStatusToNodeStatus, "serverStatusToNodeStatus");
-      this.groupNamingConvention = checkNotNull(groupNamingConvention, "groupNamingConvention")
-            .createWithoutPrefix();
+      this.groupNamingConvention = checkNotNull(groupNamingConvention, "groupNamingConvention").createWithoutPrefix();
       this.credentialStore = checkNotNull(credentialStore, "credentialStore");
+      this.locations = checkNotNull(locations, "locations");
    }
 
    @Override
@@ -68,20 +72,19 @@ public class ServerInfoToNodeMetadata implements Function<ServerInfo, NodeMetada
       builder.ids(serverInfo.getUuid());
       builder.name(serverInfo.getName());
       builder.group(groupNamingConvention.extractGroup(serverInfo.getName()));
+      builder.location(getOnlyElement(locations.get()));
 
       // TODO: Once we have the "listHardwareProfiles" method, make sure this matches with one of the
       // hardwares listed there.
-      builder.hardware(new HardwareBuilder()
-            .ids(serverInfo.getUuid())
-            .processor(new Processor(1, serverInfo.getCpu()))
+      builder.hardware(new HardwareBuilder().ids(serverInfo.getUuid()).processor(new Processor(1, serverInfo.getCpu()))
             .ram(serverInfo.getMemory().intValue())
-            .volumes(Iterables.transform(serverInfo.getDrives(), serverDriveToVolume))
-            .build());
-      
+            .volumes(Iterables.transform(serverInfo.getDrives(), serverDriveToVolume)).build());
+
       builder.userMetadata(serverInfo.getMeta());
+      builder.tags(serverInfo.getTags());
       builder.status(serverStatusToNodeStatus.get(serverInfo.getStatus()));
       builder.publicAddresses(filter(transform(serverInfo.getNics(), nicToAddress), notNull()));
-      
+
       // CloudSigma does not provide a way to get the credentials.
       // Try to return them from the credential store
       Credentials credentials = credentialStore.get("node#" + serverInfo.getUuid());
@@ -89,17 +92,23 @@ public class ServerInfoToNodeMetadata implements Function<ServerInfo, NodeMetada
          builder.credentials(LoginCredentials.class.cast(credentials));
       }
 
-      ServerDrive serverBootDrive = null;
-      for (ServerDrive serverDrive : serverInfo.getDrives()) {
-         if (serverDrive.getBootOrder() > 0 &&
-               (serverBootDrive == null || serverDrive.getBootOrder() < serverBootDrive.getBootOrder())) {
-            serverBootDrive = serverDrive;
+      String imageId = serverInfo.getMeta().get("image_id");
+      if (imageId == null) {
+         ServerDrive serverBootDrive = null;
+         for (ServerDrive serverDrive : serverInfo.getDrives()) {
+            if (serverDrive.getBootOrder() > 0
+                  && (serverBootDrive == null || serverDrive.getBootOrder() < serverBootDrive.getBootOrder())) {
+               serverBootDrive = serverDrive;
+            }
+         }
+         if (serverBootDrive != null) {
+            imageId = serverBootDrive.getDriveUuid();
          }
       }
-      if (serverBootDrive != null) {
-         builder.imageId(serverBootDrive.getDriveUuid());
-      }
-      
+
+      builder.imageId(imageId);
+
       return builder.build();
    }
+
 }

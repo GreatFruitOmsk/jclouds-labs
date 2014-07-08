@@ -19,42 +19,36 @@ package org.jclouds.cloudsigma2.compute.config;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
+import static org.jclouds.cloudsigma2.domain.ServerStatus.STOPPED;
+import static org.jclouds.cloudsigma2.domain.ServerStatus.STOPPING;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 import org.easymock.EasyMock;
 import org.jclouds.cloudsigma2.CloudSigma2Api;
-import org.jclouds.cloudsigma2.compute.config.CloudSigma2ComputeServiceContextModule.DriveClonedPredicate;
-import org.jclouds.cloudsigma2.domain.DriveInfo;
-import org.jclouds.cloudsigma2.domain.DriveStatus;
+import org.jclouds.cloudsigma2.compute.config.CloudSigma2ComputeServiceContextModule.ServerStatusPredicate;
+import org.jclouds.cloudsigma2.domain.ServerInfo;
 import org.testng.annotations.Test;
 
 /**
- * Unit tests for the drive cloned predicate
+ * Unit tests for the server status predicate.
  */
-@Test(groups = "unit", testName = "DriveClonedPredicateTest")
-public class DriveClonedPredicateTest {
+@Test(groups = "unit", testName = "ServerStatusPredicatePredicateTest")
+public class ServerStatusPredicatePredicateTest {
 
-   public void testDriveCloned() {
+   public void testServerStatus() {
       CloudSigma2Api api = EasyMock.createMock(CloudSigma2Api.class);
 
-      for (DriveStatus status : DriveStatus.values()) {
-         expect(api.getDriveInfo(status.name())).andReturn(mockDrive(status));
-      }
+      expect(api.getServerInfo("one")).andReturn(new ServerInfo.Builder().status(STOPPED).build());
+      expect(api.getServerInfo("two")).andReturn(new ServerInfo.Builder().status(STOPPING).build());
 
       replay(api);
 
-      DriveClonedPredicate predicate = new DriveClonedPredicate(api);
-
-      assertFalse(predicate.apply(mockDrive(DriveStatus.COPYING)));
-      assertFalse(predicate.apply(mockDrive(DriveStatus.UNAVAILABLE)));
-      assertTrue(predicate.apply(mockDrive(DriveStatus.MOUNTED)));
-      assertTrue(predicate.apply(mockDrive(DriveStatus.UNMOUNTED)));
+      ServerStatusPredicate predicate = new ServerStatusPredicate(api, STOPPED);
+      assertTrue(predicate.apply("one"));
+      assertFalse(predicate.apply("two"));
 
       verify(api);
    }
 
-   private static DriveInfo mockDrive(DriveStatus status) {
-      return new DriveInfo.Builder().uuid(status.name()).status(status).build();
-   }
 }
