@@ -137,7 +137,11 @@ public class CloudSigma2ComputeServiceAdapter implements
       for (String network : options.getNetworks()) {
          VLANInfo vlan = api.getVLANInfo(network);
          checkArgument(vlan != null, "network %s not found", network);
-         nics.add(vlan.toNIC(firewallPolicy));
+         nics.add(new NIC.Builder()
+            .vlan(vlan)
+            .firewallPolicy(firewallPolicy)
+            .model(options.getNicModel())
+            .build());
       }
 
       // If no network has been specified, assign an IP from the DHCP
