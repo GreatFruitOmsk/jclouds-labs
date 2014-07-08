@@ -52,7 +52,7 @@ public class LibraryDriveToImage implements Function<LibraryDrive, Image> {
          .operatingSystem(OperatingSystem.builder()
                .name(libraryDrive.getName())
                .arch(libraryDrive.getArch())
-               .family(OsFamily.fromValue(libraryDrive.getOs()))
+               .family(libraryDrive.getOs() == null? null : OsFamily.fromValue(libraryDrive.getOs()))
                .version(libraryDrive.getVersion())
                .description(libraryDrive.getDescription())
                .build())

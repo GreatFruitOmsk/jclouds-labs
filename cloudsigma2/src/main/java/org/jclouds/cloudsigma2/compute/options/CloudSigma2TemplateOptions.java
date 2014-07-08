@@ -16,8 +16,109 @@
  */
 package org.jclouds.cloudsigma2.compute.options;
 
+import org.jclouds.cloudsigma2.domain.DeviceEmulationType;
+import org.jclouds.cloudsigma2.domain.Model;
 import org.jclouds.compute.options.TemplateOptions;
+
+import com.google.common.base.Objects.ToStringHelper;
 
 public class CloudSigma2TemplateOptions extends TemplateOptions {
 
+   private DeviceEmulationType deviceEmulationType = DeviceEmulationType.VIRTIO;
+   private Model nicModel = Model.VIRTIO;
+
+   /**
+    * Configures the device emulation type.
+    */
+   public CloudSigma2TemplateOptions deviceEmulationType(DeviceEmulationType deviceEmulationType) {
+      this.deviceEmulationType = deviceEmulationType;
+      return this;
+   }
+
+   /**
+    * Configures the type of NICs to create.
+    */
+   public CloudSigma2TemplateOptions nicModel(Model nicModel) {
+      this.nicModel = nicModel;
+      return this;
+   }
+
+   public DeviceEmulationType getDeviceEmulationType() {
+      return deviceEmulationType;
+   }
+
+   public Model getNicModel() {
+      return nicModel;
+   }
+
+   @Override
+   public TemplateOptions clone() {
+      CloudSigma2TemplateOptions options = new CloudSigma2TemplateOptions();
+      copyTo(options);
+      return options;
+   }
+
+   @Override
+   public void copyTo(TemplateOptions to) {
+      super.copyTo(to);
+      if (to instanceof CloudSigma2TemplateOptions) {
+         CloudSigma2TemplateOptions eTo = CloudSigma2TemplateOptions.class.cast(to);
+         eTo.deviceEmulationType(deviceEmulationType);
+         eTo.nicModel(nicModel);
+      }
+   }
+
+   @Override
+   public int hashCode() {
+      final int prime = 31;
+      int result = super.hashCode();
+      result = prime * result + ((deviceEmulationType == null) ? 0 : deviceEmulationType.hashCode());
+      result = prime * result + ((nicModel == null) ? 0 : nicModel.hashCode());
+      return result;
+   }
+
+   @Override
+   public boolean equals(Object obj) {
+      if (this == obj)
+         return true;
+      if (!super.equals(obj))
+         return false;
+      if (getClass() != obj.getClass())
+         return false;
+      CloudSigma2TemplateOptions other = (CloudSigma2TemplateOptions) obj;
+      if (deviceEmulationType != other.deviceEmulationType)
+         return false;
+      if (nicModel != other.nicModel)
+         return false;
+      return true;
+   }
+
+   @Override
+   public ToStringHelper string() {
+      ToStringHelper toString = super.string().omitNullValues();
+      toString.add("deviceEmulationType", deviceEmulationType);
+      toString.add("nicModel", nicModel);
+      return toString;
+   }
+
+   public static class Builder {
+
+      /**
+       * @see CloudSigma2TemplateOptions#deviceEmulationType(DeviceEmulationType)
+       */
+      public CloudSigma2TemplateOptions deviceEmulationType(DeviceEmulationType deviceEmulationType) {
+         CloudSigma2TemplateOptions options = new CloudSigma2TemplateOptions();
+         options.deviceEmulationType(deviceEmulationType);
+         return options;
+      }
+
+      /**
+       * @see CloudSigma2TemplateOptions#nicModel(Model)
+       */
+      public CloudSigma2TemplateOptions nicModel(Model nicModel) {
+         CloudSigma2TemplateOptions options = new CloudSigma2TemplateOptions();
+         options.nicModel(nicModel);
+         return options;
+      }
+   }
 }

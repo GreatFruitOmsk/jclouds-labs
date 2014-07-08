@@ -36,14 +36,29 @@ import javax.inject.Singleton;
 
 import org.jclouds.Constants;
 import org.jclouds.cloudsigma2.CloudSigma2Api;
-import org.jclouds.cloudsigma2.domain.*;
+import org.jclouds.cloudsigma2.compute.options.CloudSigma2TemplateOptions;
+import org.jclouds.cloudsigma2.domain.DriveInfo;
+import org.jclouds.cloudsigma2.domain.DriveStatus;
+import org.jclouds.cloudsigma2.domain.FirewallAction;
+import org.jclouds.cloudsigma2.domain.FirewallDirection;
+import org.jclouds.cloudsigma2.domain.FirewallIpProtocol;
+import org.jclouds.cloudsigma2.domain.FirewallPolicy;
+import org.jclouds.cloudsigma2.domain.FirewallRule;
+import org.jclouds.cloudsigma2.domain.IPConfiguration;
+import org.jclouds.cloudsigma2.domain.IPConfigurationType;
+import org.jclouds.cloudsigma2.domain.LibraryDrive;
+import org.jclouds.cloudsigma2.domain.MediaType;
+import org.jclouds.cloudsigma2.domain.NIC;
+import org.jclouds.cloudsigma2.domain.ServerInfo;
+import org.jclouds.cloudsigma2.domain.VLANInfo;
 import org.jclouds.compute.ComputeServiceAdapter;
 import org.jclouds.compute.domain.Hardware;
 import org.jclouds.compute.domain.HardwareBuilder;
 import org.jclouds.compute.domain.Image;
 import org.jclouds.compute.domain.Processor;
 import org.jclouds.compute.domain.Template;
-import org.jclouds.compute.options.TemplateOptions;
+import org.jclouds.compute.domain.Volume;
+import org.jclouds.compute.domain.internal.VolumeImpl;
 import org.jclouds.compute.reference.ComputeServiceConstants;
 import org.jclouds.domain.Location;
 import org.jclouds.domain.LoginCredentials;
@@ -85,24 +100,20 @@ public class CloudSigma2ComputeServiceAdapter implements
    @Override
    public NodeAndInitialCredentials<ServerInfo> createNodeWithGroupEncodedIntoName(String tag, String name,
          Template template) {
-      TemplateOptions options = template.getOptions();
+      CloudSigma2TemplateOptions options = template.getOptions().as(CloudSigma2TemplateOptions.class);
       Image image = template.getImage();
       Hardware hardware = template.getHardware();
 
-      LibraryDrive drive = api.getLibraryDrive(image.getProviderId());
+      DriveInfo drive = api.getLibraryDrive(image.getProviderId());
 
       if (!drive.getMedia().equals(MediaType.CDROM)) {
          logger.debug(">> cloning library drive %s...", image.getProviderId());
 
-         drive = api.cloneLibraryDrive(image.getProviderId(),
-               new LibraryDrive.Builder()
-                     .name(image.getName())
-                     .build());
-         // TODO: We need to wait until the clone operation has completed.
-         // Can we safely do this by polling the returned LibraryDrive? Is the UUID field properly populated?
-         // If not, we'll have to make an additional call here to get the full populated object we've jsut cloned and
-         // poll for its status
+         drive = api.cloneLibraryDrive(image.getProviderId(), null);
          driveCloned.apply(drive);
+
+         // Refresh the drive object and verify the clone operation didn't time out
+         drive = api.getDriveInfo(drive.getUuid());
          checkState(drive.getStatus() == DriveStatus.UNMOUNTED, "Resource is in invalid status: %s", drive.getStatus());
 
          logger.debug(">> drive cloned (%s)...", drive);
@@ -112,7 +123,9 @@ public class CloudSigma2ComputeServiceAdapter implements
       for (int port : options.getInboundPorts()) {
          firewallRulesBuilder.add(new FirewallRule.Builder()
                .action(FirewallAction.ACCEPT)
-               .sourcePort("" + port)
+               .ipProtocol(FirewallIpProtocol.TCP)
+               .direction(FirewallDirection.IN)
+               .destinationPort("" + port)
                .build());
       }
 
@@ -120,14 +133,22 @@ public class CloudSigma2ComputeServiceAdapter implements
             .rules(firewallRulesBuilder.build())
             .build());
       
-      // TODO: Attach the server to the networks specified by the user.
-      // If the user does not explicitly provide the network identifiers,
-      // should we allocate a public ip address automatically?
       ImmutableList.Builder<NIC> nics = ImmutableList.builder();
       for (String network : options.getNetworks()) {
          VLANInfo vlan = api.getVLANInfo(network);
          checkArgument(vlan != null, "network %s not found", network);
          nics.add(vlan.toNIC(firewallPolicy));
+      }
+
+      // If no network has been specified, assign an IP from the DHCP
+      if (options.getNetworks().isEmpty()) {
+         logger.debug(">> no networks configured. Will assign an IP from the DHCP...");
+         NIC nic = new NIC.Builder()
+            .firewallPolicy(firewallPolicy)
+            .model(options.getNicModel())
+            .ipV4Configuration(new IPConfiguration.Builder().configurationType(IPConfigurationType.DHCP).build())
+            .build();
+         nics.add(nic);
       }
 
       String vncPassword = Optional.fromNullable(options.getLoginPassword()).or(defaultVncPassword);
@@ -136,7 +157,7 @@ public class CloudSigma2ComputeServiceAdapter implements
             .name(name)
             .cpu((int) hardware.getProcessors().get(0).getSpeed())
             .memory(BigInteger.valueOf(hardware.getRam()).multiply(BigInteger.valueOf(1024 * 1024)))
-            .drives(ImmutableList.of(drive.toServerDrive(1, "0:1", DeviceEmulationType.VIRTIO)))
+            .drives(ImmutableList.of(drive.toServerDrive(1, "0:1", options.getDeviceEmulationType())))
             .nics(nics.build())
             .meta(options.getUserMetadata())
             .tags(ImmutableList.copyOf(options.getTags()))
@@ -164,8 +185,10 @@ public class CloudSigma2ComputeServiceAdapter implements
       for (int ram : ramSetBuilder.build()) {
          for (double cpu : cpuSetBuilder.build()) {
             hardware.add(new HardwareBuilder()
+                  .id(String.format("cpu=%f,ram=%d", cpu, ram))
                   .processor(new Processor(1, cpu))
                   .ram(ram)
+                  .volumes(ImmutableList.<Volume> of(new VolumeImpl(null, true, false)))
                   .build());
          }
       }

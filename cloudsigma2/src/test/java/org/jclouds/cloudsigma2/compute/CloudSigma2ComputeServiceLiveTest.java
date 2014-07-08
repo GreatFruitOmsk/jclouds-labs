@@ -34,5 +34,4 @@ public class CloudSigma2ComputeServiceLiveTest extends BaseComputeServiceLiveTes
       return new SshjSshClientModule();
    }
 
-   // TODO nacx: Find the image and a default config to be used in the tests
 }
