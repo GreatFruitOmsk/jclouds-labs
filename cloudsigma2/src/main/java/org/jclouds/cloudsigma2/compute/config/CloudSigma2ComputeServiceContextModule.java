@@ -27,6 +27,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.jclouds.cloudsigma2.CloudSigma2Api;
+import org.jclouds.cloudsigma2.compute.extensions.CloudSigma2SecurityGroupExtension;
 import org.jclouds.cloudsigma2.compute.functions.LibraryDriveToImage;
 import org.jclouds.cloudsigma2.compute.functions.NICToAddress;
 import org.jclouds.cloudsigma2.compute.functions.ServerDriveToVolume;
@@ -47,6 +48,7 @@ import org.jclouds.compute.domain.Hardware;
 import org.jclouds.compute.domain.Image;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.Volume;
+import org.jclouds.compute.extensions.SecurityGroupExtension;
 import org.jclouds.compute.functions.TemplateOptionsToStatement;
 import org.jclouds.compute.options.TemplateOptions;
 import org.jclouds.compute.reference.ComputeServiceConstants.PollPeriod;
@@ -56,8 +58,10 @@ import org.jclouds.functions.IdentityFunction;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
+import com.google.inject.Injector;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 
@@ -87,6 +91,14 @@ public class CloudSigma2ComputeServiceContextModule extends
 
       bind(TemplateOptions.class).to(CloudSigma2TemplateOptions.class);
       bind(TemplateOptionsToStatement.class).to(TemplateOptionsToStatementWithoutPublicKey.class);
+      
+      bind(new TypeLiteral<SecurityGroupExtension>() {
+      }).to(CloudSigma2SecurityGroupExtension.class);
+   }
+   
+   @Override
+   protected Optional<SecurityGroupExtension> provideSecurityGroupExtension(Injector i) {
+      return Optional.of(i.getInstance(SecurityGroupExtension.class));
    }
 
    @VisibleForTesting
