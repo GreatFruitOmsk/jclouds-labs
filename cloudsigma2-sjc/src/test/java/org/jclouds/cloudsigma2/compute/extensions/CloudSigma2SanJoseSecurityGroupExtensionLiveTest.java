@@ -14,14 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.cloudsigma2;
+package org.jclouds.cloudsigma2.compute.extensions;
 
 import org.testng.annotations.Test;
 
-@Test(groups = "live", testName = "CloudSigma2WashingtonLiveTest")
-public class CloudSigma2WashingtonLiveTest extends CloudSigma2ApiLiveTest {
+@Test(groups = "live", testName = "CloudSigma2SanJoseSecurityGroupExtensionLiveTest")
+public class CloudSigma2SanJoseSecurityGroupExtensionLiveTest extends CloudSigma2SecurityGroupExtensionLiveTest {
 
-   public CloudSigma2WashingtonLiveTest() {
-      provider = "cloudsigma2-wdc";
+   public CloudSigma2SanJoseSecurityGroupExtensionLiveTest() {
+      provider = "cloudsigma2-sjc";
    }
+
 }
