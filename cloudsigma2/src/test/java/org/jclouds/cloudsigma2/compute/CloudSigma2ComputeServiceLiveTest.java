@@ -24,8 +24,6 @@ import org.jclouds.compute.internal.BaseComputeServiceLiveTest;
 import org.jclouds.sshj.config.SshjSshClientModule;
 import org.testng.annotations.Test;
 
-import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.Module;
 
 @Test(groups = "live", testName = "CloudSigma2ComputeServiceLiveTest")
@@ -53,7 +51,7 @@ public class CloudSigma2ComputeServiceLiveTest extends BaseComputeServiceLiveTes
 
    @Override
    protected void checkResponseEqualsHostname(ExecResponse execResponse, NodeMetadata node1) {
-      // TODO: Does CloudSigma return the hostname in the servers?
+      // CloudSigma does not return the hostname
    }
 
 }

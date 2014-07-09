@@ -41,4 +41,9 @@ public class CloudSigma2TemplateOptionsTest {
       CloudSigma2TemplateOptions options = new CloudSigma2TemplateOptions.Builder().nicModel(Model.E1000);
       assertEquals(options.getNicModel(), Model.E1000);
    }
+   
+   public void testVncPassword() {
+      CloudSigma2TemplateOptions options = new CloudSigma2TemplateOptions.Builder().vncPassword("foo");
+      assertEquals(options.getVncPassword(), "foo");
+   }
 }

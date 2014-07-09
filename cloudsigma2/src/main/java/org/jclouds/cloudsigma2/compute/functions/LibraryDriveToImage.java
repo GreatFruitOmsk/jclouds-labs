@@ -52,6 +52,7 @@ public class LibraryDriveToImage implements Function<LibraryDrive, Image> {
          .operatingSystem(OperatingSystem.builder()
                .name(libraryDrive.getName())
                .arch(libraryDrive.getArch())
+               .is64Bit(libraryDrive.getArch() != null && libraryDrive.getArch().equals("64"))
                .family(libraryDrive.getOs() == null? null : OsFamily.fromValue(libraryDrive.getOs()))
                .version(libraryDrive.getVersion())
                .description(libraryDrive.getDescription())

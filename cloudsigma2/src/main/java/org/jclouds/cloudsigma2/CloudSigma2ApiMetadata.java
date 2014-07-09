@@ -16,6 +16,7 @@
  */
 package org.jclouds.cloudsigma2;
 
+import static org.jclouds.cloudsigma2.config.CloudSigma2Properties.PROPERTY_DELETE_DRIVES;
 import static org.jclouds.cloudsigma2.config.CloudSigma2Properties.PROPERTY_VNC_PASSWORD;
 import static org.jclouds.cloudsigma2.config.CloudSigma2Properties.TIMEOUT_DRIVE_CLONED;
 import static org.jclouds.compute.config.ComputeServiceProperties.TEMPLATE;
@@ -55,11 +56,12 @@ public class CloudSigma2ApiMetadata extends BaseHttpApiMetadata<CloudSigma2Api> 
       Properties properties = BaseHttpApiMetadata.defaultProperties();
       properties.setProperty(PROPERTY_VNC_PASSWORD, "IL9vs34d");
       properties.setProperty(TIMEOUT_DRIVE_CLONED, "60000");
+      properties.setProperty(PROPERTY_DELETE_DRIVES, "true");
       // passwords are set post-boot, so auth failures are possible
       // from a race condition applying the password set script
       properties.setProperty("jclouds.ssh.max-retries", "7");
       properties.setProperty("jclouds.ssh.retry-auth", "true");
-      properties.setProperty(TEMPLATE, "osFamily=UBUNTU,imageNameMatches=.*[Cc]loud [Ii]mage.*,os64Bit=true");
+      properties.setProperty(TEMPLATE, "imageNameMatches=Ubuntu.*[Cc]loud [Ii]mage.*");
       return properties;
    }
 
@@ -69,9 +71,7 @@ public class CloudSigma2ApiMetadata extends BaseHttpApiMetadata<CloudSigma2Api> 
          super(CloudSigma2Api.class);
          id("cloudsigma2")
                .name("CloudSigma API")
-               .defaultIdentity("email")
                .identityName("Email")
-               .defaultCredential("Password")
                .credentialName("Password")
                .documentation(URI.create("http://cloudsigma.com/en/platform-details/the-api"))
                .version("2.0")

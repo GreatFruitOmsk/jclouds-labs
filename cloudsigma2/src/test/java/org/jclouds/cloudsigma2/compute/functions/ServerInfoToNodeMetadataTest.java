@@ -39,6 +39,7 @@ import org.jclouds.cloudsigma2.domain.NIC;
 import org.jclouds.cloudsigma2.domain.ServerDrive;
 import org.jclouds.cloudsigma2.domain.ServerInfo;
 import org.jclouds.cloudsigma2.domain.ServerStatus;
+import org.jclouds.cloudsigma2.domain.Tag;
 import org.jclouds.compute.domain.HardwareBuilder;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.NodeMetadataBuilder;
@@ -78,7 +79,7 @@ public class ServerInfoToNodeMetadataTest {
       
       input = new ServerInfo.Builder()
             .uuid("a19a425f-9e92-42f6-89fb-6361203071bb")
-            .name("cloudsigma2-test_acc_full_server")
+            .name("jclouds-cloudsigma-test_acc_full_server")
             .cpu(1000)
             .memory(new BigInteger("268435456"))
             .status(ServerStatus.STOPPED)
@@ -97,13 +98,16 @@ public class ServerInfoToNodeMetadataTest {
                         .build())
                   .build()))
              .meta(ImmutableMap.of("foo", "bar", "image_id", "image"))
-             .tags(ImmutableList.of("foo", "bar"))
+             .tags(ImmutableList.of(new Tag.Builder().uuid("foo").name("foo").build(),
+                   new Tag.Builder().uuid("jclouds-cloudsigma2-s").name("jclouds-cloudsigma2-s").build(),
+                   new Tag.Builder().uuid("jclouds-cloudsigma2").name("jclouds-cloudsigma2").build()
+                   ))
             .build();
 
       expected = new NodeMetadataBuilder()
             .ids("a19a425f-9e92-42f6-89fb-6361203071bb")
-            .name("cloudsigma2-test_acc_full_server")
-            .group("cloudsigma2")
+            .name("jclouds-cloudsigma-test_acc_full_server")
+            .group("jclouds-cloudsigma")
             .status(NodeMetadata.Status.SUSPENDED)
             .location(getOnlyElement(justProvider.get()))
             .imageId("image")
@@ -129,7 +133,7 @@ public class ServerInfoToNodeMetadataTest {
                   .build())
             .publicAddresses(ImmutableSet.of("1.2.3.4"))
             .userMetadata(ImmutableMap.of("foo", "bar", "image_id", "image"))
-            .tags(ImmutableList.of("foo", "bar"))
+            .tags(ImmutableList.of("foo", "cloudsigma2-s", "cloudsigma2"))
             .credentials(credentials)
             .build();
       
@@ -155,10 +159,15 @@ public class ServerInfoToNodeMetadataTest {
          expect(api.getDriveInfo(drive.getDriveUuid())).andReturn(mockDrive);
       }
       
+      // tags
+      expect(api.getTagInfo("foo")).andReturn(new Tag.Builder().name("foo").build());
+      expect(api.getTagInfo("jclouds-cloudsigma2-s")).andReturn(new Tag.Builder().name("jclouds-cloudsigma2-s").build());
+      expect(api.getTagInfo("jclouds-cloudsigma2")).andReturn(new Tag.Builder().name("jclouds-cloudsigma2").build());
+      
       replay(api);
       
       ServerInfoToNodeMetadata function = new ServerInfoToNodeMetadata(new ServerDriveToVolume(api), new NICToAddress(),
-            serverStatusToNodeStatus, namingConvention, credentialStore, justProvider);
+            serverStatusToNodeStatus, namingConvention, credentialStore, justProvider, api);
       
       NodeMetadata converted = function.apply(input);
       assertEquals(converted, expected);

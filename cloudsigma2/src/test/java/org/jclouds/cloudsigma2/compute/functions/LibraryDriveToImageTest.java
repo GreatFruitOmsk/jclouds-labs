@@ -63,6 +63,7 @@ public class LibraryDriveToImageTest {
                   .arch("64")
                   .family(OsFamily.LINUX)
                   .version("7.3")
+                  .is64Bit(true)
                   .description("Debian 7.3 Server - amd64 Pre-Installed English with Python, SSH and VirtIO support. " +
                         "Last update 2014/02/15.")
                   .build())

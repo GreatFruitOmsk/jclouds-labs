@@ -27,9 +27,11 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.jclouds.cloudsigma2.CloudSigma2Api;
 import org.jclouds.cloudsigma2.domain.ServerDrive;
 import org.jclouds.cloudsigma2.domain.ServerInfo;
 import org.jclouds.cloudsigma2.domain.ServerStatus;
+import org.jclouds.cloudsigma2.domain.Tag;
 import org.jclouds.compute.domain.HardwareBuilder;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.NodeMetadataBuilder;
@@ -48,21 +50,25 @@ public class ServerInfoToNodeMetadata implements Function<ServerInfo, NodeMetada
    private final ServerDriveToVolume serverDriveToVolume;
    private final NICToAddress nicToAddress;
    private final Map<ServerStatus, NodeMetadata.Status> serverStatusToNodeStatus;
-   private final GroupNamingConvention groupNamingConvention;
+   private final GroupNamingConvention groupNamingConventionWithPrefix;
+   private final GroupNamingConvention groupNamingConventionWithoutPrefix;
    private final Map<String, Credentials> credentialStore;
    private final JustProvider locations;
+   private final CloudSigma2Api api;
 
    @Inject
    public ServerInfoToNodeMetadata(ServerDriveToVolume serverDriveToVolume, NICToAddress nicToAddress,
          Map<ServerStatus, NodeMetadata.Status> serverStatusToNodeStatus,
          GroupNamingConvention.Factory groupNamingConvention, Map<String, Credentials> credentialStore,
-         JustProvider locations) {
+         JustProvider locations, CloudSigma2Api api) {
       this.serverDriveToVolume = checkNotNull(serverDriveToVolume, "serverDriveToVolume");
       this.nicToAddress = checkNotNull(nicToAddress, "nicToAddress");
       this.serverStatusToNodeStatus = checkNotNull(serverStatusToNodeStatus, "serverStatusToNodeStatus");
-      this.groupNamingConvention = checkNotNull(groupNamingConvention, "groupNamingConvention").createWithoutPrefix();
+      this.groupNamingConventionWithPrefix = checkNotNull(groupNamingConvention, "groupNamingConvention").create();
+      this.groupNamingConventionWithoutPrefix = groupNamingConvention.createWithoutPrefix();
       this.credentialStore = checkNotNull(credentialStore, "credentialStore");
       this.locations = checkNotNull(locations, "locations");
+      this.api = checkNotNull(api, "api");
    }
 
    @Override
@@ -71,17 +77,16 @@ public class ServerInfoToNodeMetadata implements Function<ServerInfo, NodeMetada
 
       builder.ids(serverInfo.getUuid());
       builder.name(serverInfo.getName());
-      builder.group(groupNamingConvention.extractGroup(serverInfo.getName()));
+      builder.group(groupNamingConventionWithoutPrefix.extractGroup(serverInfo.getName()));
       builder.location(getOnlyElement(locations.get()));
 
-      // TODO: Once we have the "listHardwareProfiles" method, make sure this matches with one of the
-      // hardwares listed there.
       builder.hardware(new HardwareBuilder().ids(serverInfo.getUuid()).processor(new Processor(1, serverInfo.getCpu()))
             .ram(serverInfo.getMemory().intValue())
             .volumes(Iterables.transform(serverInfo.getDrives(), serverDriveToVolume)).build());
 
+      builder.tags(readTags(serverInfo));
       builder.userMetadata(serverInfo.getMeta());
-      builder.tags(serverInfo.getTags());
+      builder.imageId(extractImageId(serverInfo));
       builder.status(serverStatusToNodeStatus.get(serverInfo.getStatus()));
       builder.publicAddresses(filter(transform(serverInfo.getNics(), nicToAddress), notNull()));
 
@@ -92,7 +97,12 @@ public class ServerInfoToNodeMetadata implements Function<ServerInfo, NodeMetada
          builder.credentials(LoginCredentials.class.cast(credentials));
       }
 
+      return builder.build();
+   }
+   
+   private String extractImageId(ServerInfo serverInfo) {
       String imageId = serverInfo.getMeta().get("image_id");
+      
       if (imageId == null) {
          ServerDrive serverBootDrive = null;
          for (ServerDrive serverDrive : serverInfo.getDrives()) {
@@ -105,10 +115,22 @@ public class ServerInfoToNodeMetadata implements Function<ServerInfo, NodeMetada
             imageId = serverBootDrive.getDriveUuid();
          }
       }
-
-      builder.imageId(imageId);
-
-      return builder.build();
+      
+      return imageId;
+   }
+   
+   private Iterable<String> readTags(ServerInfo serverInfo) {
+     return transform(serverInfo.getTags(), new Function<Tag, String>() {
+        @Override
+        public String apply(Tag input) {
+           Tag tag = api.getTagInfo(input.getUuid());
+           if (tag.getName() == null) {
+              return input.getUuid();
+           }
+           String tagWithoutPrefix = groupNamingConventionWithPrefix.groupInSharedNameOrNull(tag.getName());
+           return tagWithoutPrefix != null? tagWithoutPrefix : tag.getName();
+        }
+     });
    }
 
 }

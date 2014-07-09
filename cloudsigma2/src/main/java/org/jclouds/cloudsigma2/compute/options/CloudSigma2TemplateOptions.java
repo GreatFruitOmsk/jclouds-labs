@@ -26,6 +26,7 @@ public class CloudSigma2TemplateOptions extends TemplateOptions {
 
    private DeviceEmulationType deviceEmulationType = DeviceEmulationType.VIRTIO;
    private Model nicModel = Model.VIRTIO;
+   private String vncPassword;
 
    /**
     * Configures the device emulation type.
@@ -42,6 +43,14 @@ public class CloudSigma2TemplateOptions extends TemplateOptions {
       this.nicModel = nicModel;
       return this;
    }
+   
+   /**
+    * Configures the vnc password.
+    */
+   public CloudSigma2TemplateOptions vncPassword(String vncPassword) {
+      this.vncPassword = vncPassword;
+      return this;
+   }
 
    public DeviceEmulationType getDeviceEmulationType() {
       return deviceEmulationType;
@@ -49,6 +58,10 @@ public class CloudSigma2TemplateOptions extends TemplateOptions {
 
    public Model getNicModel() {
       return nicModel;
+   }
+   
+   public String getVncPassword() {
+      return vncPassword;
    }
 
    @Override
@@ -65,6 +78,7 @@ public class CloudSigma2TemplateOptions extends TemplateOptions {
          CloudSigma2TemplateOptions eTo = CloudSigma2TemplateOptions.class.cast(to);
          eTo.deviceEmulationType(deviceEmulationType);
          eTo.nicModel(nicModel);
+         eTo.vncPassword(vncPassword);
       }
    }
 
@@ -74,6 +88,7 @@ public class CloudSigma2TemplateOptions extends TemplateOptions {
       int result = super.hashCode();
       result = prime * result + ((deviceEmulationType == null) ? 0 : deviceEmulationType.hashCode());
       result = prime * result + ((nicModel == null) ? 0 : nicModel.hashCode());
+      result = prime * result + ((vncPassword == null) ? 0 : vncPassword.hashCode());
       return result;
    }
 
@@ -90,6 +105,11 @@ public class CloudSigma2TemplateOptions extends TemplateOptions {
          return false;
       if (nicModel != other.nicModel)
          return false;
+      if (vncPassword == null) {
+         if (other.vncPassword != null)
+            return false;
+      } else if (!vncPassword.equals(other.vncPassword))
+         return false;
       return true;
    }
 
@@ -98,6 +118,7 @@ public class CloudSigma2TemplateOptions extends TemplateOptions {
       ToStringHelper toString = super.string().omitNullValues();
       toString.add("deviceEmulationType", deviceEmulationType);
       toString.add("nicModel", nicModel);
+      toString.add("vncPassword", vncPassword);
       return toString;
    }
 
@@ -118,6 +139,15 @@ public class CloudSigma2TemplateOptions extends TemplateOptions {
       public CloudSigma2TemplateOptions nicModel(Model nicModel) {
          CloudSigma2TemplateOptions options = new CloudSigma2TemplateOptions();
          options.nicModel(nicModel);
+         return options;
+      }
+      
+      /**
+       * @see CloudSigma2TemplateOptions#vncPassword(String)
+       */
+      public CloudSigma2TemplateOptions vncPassword(String vncPassword) {
+         CloudSigma2TemplateOptions options = new CloudSigma2TemplateOptions();
+         options.vncPassword(vncPassword);
          return options;
       }
    }
