@@ -60,6 +60,7 @@ import java.util.Map;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 
 @Test(groups = "unit")
 public class CloudSigma2ApiExpectTest extends BaseRestApiExpectTest<CloudSigma2Api> {
@@ -817,6 +818,21 @@ public class CloudSigma2ApiExpectTest extends BaseRestApiExpectTest<CloudSigma2A
    }
 
    @Test
+   public void testGetFirewallPolicy() throws Exception {
+      String uuid = "9001b532-857a-405a-8e50-54e342871e77";
+      CloudSigma2Api api = requestSendsResponse(
+            getBuilder()
+                  .endpoint(endpoint + "fwpolicies/" + uuid + "/")
+                  .build(),
+            responseBuilder()
+                  .payload(payloadFromResourceWithContentType("/fwpolicies-get-single.json",
+                        MediaType.APPLICATION_JSON))
+                  .build());
+
+      assertNotNull(api.getFirewallPolicy(uuid));
+   }
+
+   @Test
    public void testCreateFirewallPolicies() throws Exception {
       CloudSigma2Api api = requestSendsResponse(
             postBuilder()
@@ -997,6 +1013,20 @@ public class CloudSigma2ApiExpectTest extends BaseRestApiExpectTest<CloudSigma2A
                   .build());
 
       assertNotNull(result);
+   }
+
+   @Test
+   public void testDeleteFirewallPolicy() throws Exception {
+      String uuid = "9001b532-857a-405a-8e50-54e342871e77";
+
+      CloudSigma2Api api = requestSendsResponse(
+            deleteBuilder()
+                  .endpoint(endpoint + "fwpolicies/" + uuid + "/")
+                  .build(),
+            responseBuilder()
+                  .build());
+
+      api.deleteFirewallPolicy(uuid);
    }
 
    @Test

@@ -578,6 +578,17 @@ public interface CloudSigma2Api extends Closeable {
    PaginatedCollection<FirewallPolicy> listFirewallPoliciesInfo(PaginationOptions options);
 
    /**
+    * Gets a detailed list of firewall policy
+    *
+    * @return firewall policy
+    */
+   @Named("fwpolicy:getFirewallPolicy/{uuid}")
+   @GET
+   @Path("/fwpolicies/{uuid}/")
+   @Fallback(Fallbacks.NullOnNotFoundOr404.class)
+   FirewallPolicy getFirewallPolicy(@PathParam("uuid") String uuid);
+
+   /**
     * Creates firewall policies.
     *
     * @param firewallPolicies firewall policies to create
@@ -616,6 +627,17 @@ public interface CloudSigma2Api extends Closeable {
    @Path("/fwpolicies/{uuid}/")
    FirewallPolicy editFirewallPolicy(@PathParam("uuid") String uuid
          , @BinderParam(BindFirewallPolicyToJsonRequest.class) FirewallPolicy firewallPolicy);
+
+   /**
+    * Deletes a single firewall policy.
+    *
+    * @param uuid uuid of firewall policy to delete
+    */
+   @Named("tag:deleteFirewallPolicy/{uuid}")
+   @DELETE
+   @Path("/fwpolicies/{uuid}/")
+   @Fallback(Fallbacks.NullOnNotFoundOr404.class)
+   void deleteFirewallPolicy(@PathParam("uuid") String uuid);
 
    /**
     * Gets detailed information for VLAN identified by VLAN uuid.

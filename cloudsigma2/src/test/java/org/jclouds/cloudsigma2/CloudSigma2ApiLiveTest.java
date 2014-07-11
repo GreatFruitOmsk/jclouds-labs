@@ -76,6 +76,7 @@ public class CloudSigma2ApiLiveTest extends BaseApiLiveTest<CloudSigma2Api> {
    private ServerInfo createdServer;
    private List<ServerInfo> createdServers;
    private FirewallPolicy createdFirewallPolicy;
+   private List<FirewallPolicy> createdFirewallPolicies;
    private Tag createdTag;
    private List<Tag> createdTags;
 
@@ -294,6 +295,13 @@ public class CloudSigma2ApiLiveTest extends BaseApiLiveTest<CloudSigma2Api> {
       assertNotNull(api.listFirewallPoliciesInfo());
    }
 
+   @Test(dependsOnMethods = {"testCreateFirewallPolicies"})
+   public void testGetFirewallPolicy() throws Exception {
+      for (FirewallPolicy firewallPolicy : api.listFirewallPolicies().concat()) {
+         assertNotNull(api.getFirewallPolicy(firewallPolicy.getUuid()));
+      }
+   }
+
    @Test
    public void testCreateFirewallPolicies() throws Exception {
       List<FirewallPolicy> newFirewallPolicies = ImmutableList.of(
@@ -350,7 +358,7 @@ public class CloudSigma2ApiLiveTest extends BaseApiLiveTest<CloudSigma2Api> {
                         .build()))
                   .build());
 
-      List<FirewallPolicy> createdFirewallPolicies = api.createFirewallPolicies(newFirewallPolicies);
+      createdFirewallPolicies = api.createFirewallPolicies(newFirewallPolicies);
       assertEquals(newFirewallPolicies.size(), createdFirewallPolicies.size());
 
       for (int i = 0; i < newFirewallPolicies.size(); i++) {
@@ -422,6 +430,23 @@ public class CloudSigma2ApiLiveTest extends BaseApiLiveTest<CloudSigma2Api> {
             .build();
 
       checkFirewallPolicy(editedPolicy, api.editFirewallPolicy(createdFirewallPolicy.getUuid(), editedPolicy));
+   }
+
+   @Test(dependsOnMethods = {"testEditFirewallPolicy", "testCreateFirewallPolicies"})
+   public void deleteFirewallPolicies() throws Exception {
+      ImmutableList.Builder<String> stringListBuilder = ImmutableList.builder();
+
+      stringListBuilder.add(createdFirewallPolicy.getUuid());
+      api.deleteFirewallPolicy(createdFirewallPolicy.getUuid());
+
+      for (FirewallPolicy firewallPolicy : createdFirewallPolicies) {
+         stringListBuilder.add(firewallPolicy.getUuid());
+         api.deleteFirewallPolicy(firewallPolicy.getUuid());
+      }
+
+      ImmutableList<String> uuids = stringListBuilder.build();
+      FluentIterable<FirewallPolicy> servers = api.listFirewallPolicies().concat();
+      assertFalse(any(transform(servers, extractUuid()), in(uuids)));
    }
 
    @Test
