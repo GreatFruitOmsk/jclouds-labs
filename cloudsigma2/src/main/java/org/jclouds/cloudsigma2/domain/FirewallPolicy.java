@@ -108,6 +108,16 @@ public class FirewallPolicy extends Item {
          return this;
       }
 
+      public static Builder fromFirewallPolicy(FirewallPolicy firewallPolicy) {
+         return new Builder()
+               .resourceUri(firewallPolicy.getResourceUri())
+               .uuid(firewallPolicy.getUuid())
+               .rules(firewallPolicy.getRules())
+               .name(firewallPolicy.getName())
+               .meta(firewallPolicy.getMeta())
+               .tags(firewallPolicy.getTags());
+      }
+
       public FirewallPolicy build() {
          return new FirewallPolicy(meta, name, owner, resourceUri, rules, servers, tags, uuid);
       }

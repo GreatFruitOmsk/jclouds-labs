@@ -28,6 +28,7 @@ import javax.inject.Singleton;
 
 import org.jclouds.cloudsigma2.CloudSigma2Api;
 import org.jclouds.cloudsigma2.compute.extensions.CloudSigma2SecurityGroupExtension;
+import org.jclouds.cloudsigma2.compute.functions.FirewallPolicyToSecurityGroup;
 import org.jclouds.cloudsigma2.compute.functions.LibraryDriveToImage;
 import org.jclouds.cloudsigma2.compute.functions.NICToAddress;
 import org.jclouds.cloudsigma2.compute.functions.ServerDriveToVolume;
@@ -37,6 +38,8 @@ import org.jclouds.cloudsigma2.compute.options.CloudSigma2TemplateOptions;
 import org.jclouds.cloudsigma2.compute.strategy.CloudSigma2ComputeServiceAdapter;
 import org.jclouds.cloudsigma2.domain.DriveInfo;
 import org.jclouds.cloudsigma2.domain.DriveStatus;
+import org.jclouds.cloudsigma2.domain.FirewallIpProtocol;
+import org.jclouds.cloudsigma2.domain.FirewallPolicy;
 import org.jclouds.cloudsigma2.domain.LibraryDrive;
 import org.jclouds.cloudsigma2.domain.NIC;
 import org.jclouds.cloudsigma2.domain.ServerDrive;
@@ -47,6 +50,7 @@ import org.jclouds.compute.config.ComputeServiceAdapterContextModule;
 import org.jclouds.compute.domain.Hardware;
 import org.jclouds.compute.domain.Image;
 import org.jclouds.compute.domain.NodeMetadata;
+import org.jclouds.compute.domain.SecurityGroup;
 import org.jclouds.compute.domain.Volume;
 import org.jclouds.compute.extensions.SecurityGroupExtension;
 import org.jclouds.compute.functions.TemplateOptionsToStatement;
@@ -64,6 +68,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Injector;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
+import org.jclouds.net.domain.IpProtocol;
 
 public class CloudSigma2ComputeServiceContextModule extends
       ComputeServiceAdapterContextModule<ServerInfo, Hardware, LibraryDrive, Location> {
@@ -88,6 +93,8 @@ public class CloudSigma2ComputeServiceContextModule extends
       }).to(Class.class.cast(IdentityFunction.class));
       bind(new TypeLiteral<Function<NIC, String>>() {
       }).to(NICToAddress.class);
+      bind(new TypeLiteral<Function<FirewallPolicy, SecurityGroup>>() {
+      }).to(FirewallPolicyToSecurityGroup.class);
 
       bind(TemplateOptions.class).to(CloudSigma2TemplateOptions.class);
       bind(TemplateOptionsToStatement.class).to(TemplateOptionsToStatementWithoutPublicKey.class);
@@ -127,6 +134,30 @@ public class CloudSigma2ComputeServiceContextModule extends
    @Singleton
    protected Map<DriveStatus, Image.Status> provideImageStatusMap() {
       return driveStatusToImageStatus;
+   }
+
+   @VisibleForTesting
+   public static final Map<FirewallIpProtocol, IpProtocol> firewallIpProtocolToIpProtocol = ImmutableMap
+         .<FirewallIpProtocol, IpProtocol> builder().put(FirewallIpProtocol.TCP, IpProtocol.TCP)
+         .put(FirewallIpProtocol.UDP, IpProtocol.UDP).build();
+
+   @Provides
+   @Singleton
+   protected Map<FirewallIpProtocol, IpProtocol> provideIpProtocolMap() {
+      return firewallIpProtocolToIpProtocol;
+   }
+
+   public static final Map<IpProtocol, FirewallIpProtocol> ipProtocolToFirewallIpProtocol = ImmutableMap
+         .<IpProtocol, FirewallIpProtocol> builder().put(IpProtocol.TCP, FirewallIpProtocol.TCP)
+         .put(IpProtocol.UDP, FirewallIpProtocol.UDP)
+         .put(IpProtocol.ALL, null)
+         .put(IpProtocol.ICMP, null)
+         .put(IpProtocol.UNRECOGNIZED, null).build();
+
+   @Provides
+   @Singleton
+   protected Map<IpProtocol, FirewallIpProtocol> provideFirewallIpProtocolMap() {
+      return ipProtocolToFirewallIpProtocol;
    }
 
    @Provides
