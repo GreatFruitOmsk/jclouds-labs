@@ -298,7 +298,9 @@ public class CloudSigma2ApiLiveTest extends BaseApiLiveTest<CloudSigma2Api> {
    @Test(dependsOnMethods = {"testCreateFirewallPolicies"})
    public void testGetFirewallPolicy() throws Exception {
       for (FirewallPolicy firewallPolicy : api.listFirewallPolicies().concat()) {
-         assertNotNull(api.getFirewallPolicy(firewallPolicy.getUuid()));
+         FirewallPolicy receivedPolicy = api.getFirewallPolicy(firewallPolicy.getUuid());
+         checkFirewallPolicy(firewallPolicy, receivedPolicy);
+         assertEquals(firewallPolicy.getUuid(), receivedPolicy.getUuid());
       }
    }
 

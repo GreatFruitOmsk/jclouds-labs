@@ -820,13 +820,19 @@ public class CloudSigma2ApiExpectTest extends BaseRestApiExpectTest<CloudSigma2A
    @Test
    public void testGetFirewallPolicy() throws Exception {
       String uuid = "9001b532-857a-405a-8e50-54e342871e77";
-      CloudSigma2Api api = requestSendsResponse(
+      CloudSigma2Api api = requestsSendResponses(
             getBuilder()
                   .endpoint(endpoint + "fwpolicies/" + uuid + "/")
                   .build(),
             responseBuilder()
                   .payload(payloadFromResourceWithContentType("/fwpolicies-get-single.json",
                         MediaType.APPLICATION_JSON))
+                  .build(),
+            getBuilder()
+                  .endpoint(endpoint + "fwpolicies/failure")
+                  .build(),
+            HttpResponse.builder()
+                  .statusCode(404)
                   .build());
 
       assertNotNull(api.getFirewallPolicy(uuid));
@@ -1019,11 +1025,17 @@ public class CloudSigma2ApiExpectTest extends BaseRestApiExpectTest<CloudSigma2A
    public void testDeleteFirewallPolicy() throws Exception {
       String uuid = "9001b532-857a-405a-8e50-54e342871e77";
 
-      CloudSigma2Api api = requestSendsResponse(
+      CloudSigma2Api api = requestsSendResponses(
             deleteBuilder()
                   .endpoint(endpoint + "fwpolicies/" + uuid + "/")
                   .build(),
             responseBuilder()
+                  .build(),
+            deleteBuilder()
+                  .endpoint(endpoint + "fwpolicies/failure")
+                  .build(),
+            HttpResponse.builder()
+                  .statusCode(404)
                   .build());
 
       api.deleteFirewallPolicy(uuid);
