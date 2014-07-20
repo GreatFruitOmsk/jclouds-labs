@@ -26,8 +26,8 @@ import java.util.Set;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.internal.util.$ImmutableList;
 import org.jclouds.cloudsigma2.CloudSigma2Api;
 import org.jclouds.cloudsigma2.compute.functions.FirewallPolicyToSecurityGroup;
 import org.jclouds.cloudsigma2.domain.FirewallIpProtocol;
@@ -110,7 +110,7 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
 
    @Override
    public SecurityGroup addIpPermission(IpPermission ipPermission, SecurityGroup group) {
-      return this.addIpPermission(ipPermission.getIpProtocol(), ipPermission.getFromPort(), ipPermission.getFromPort(),
+      return this.addIpPermission(ipPermission.getIpProtocol(), ipPermission.getFromPort(), ipPermission.getToPort(),
             null, null, null, group);
    }
 
@@ -126,11 +126,13 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
          SecurityGroup group) {
       FirewallPolicy firewallPolicy = api.getFirewallPolicy(group.getId());
       List<FirewallRule> firewallRules = firewallPolicy.getRules();
-      firewallRules.add(new FirewallRule.Builder()
-            .ipProtocol(ipProtocolToFirewallIpProtocol.get(protocol))
-            .destinationPort("" + endPort)
-            .sourcePort("" + startPort)
-            .build());
+      for (String ip : ipRanges) {
+         firewallRules.add(new FirewallRule.Builder()
+               .ipProtocol(ipProtocolToFirewallIpProtocol.get(protocol))
+               .sourceIp(ip)
+               .sourcePort("" + startPort + ":" + endPort)
+               .build());
+      }
       firewallPolicy = api.editFirewallPolicy(firewallPolicy.getUuid(), FirewallPolicy.Builder
             .fromFirewallPolicy(firewallPolicy)
             .rules(firewallRules)
@@ -142,15 +144,16 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
    public SecurityGroup removeIpPermission(final IpProtocol protocol, final int startPort, final int endPort,
          Multimap<String, String> tenantIdGroupNamePairs, Iterable<String> ipRanges, Iterable<String> groupIds,
          SecurityGroup group) {
+      final Set<String> ipSet = ImmutableSet.copyOf(ipRanges);
       FirewallPolicy firewallPolicy = api.getFirewallPolicy(group.getId());
       firewallPolicy = api.editFirewallPolicy(firewallPolicy.getUuid(), FirewallPolicy.Builder
             .fromFirewallPolicy(firewallPolicy)
-            .rules($ImmutableList.copyOf(filter(firewallPolicy.getRules(), new Predicate<FirewallRule>() {
+            .rules(ImmutableList.copyOf(filter(firewallPolicy.getRules(), new Predicate<FirewallRule>() {
                @Override
                public boolean apply(FirewallRule input) {
                   return !input.getIpProtocol().equals(ipProtocolToFirewallIpProtocol.get(protocol)) &&
-                        !input.getDestinationPort().equals("" + endPort) &&
-                        !input.getSourcePort().equals("" + startPort);
+                        !input.getSourcePort().equals("" + startPort + ":" + endPort) &&
+                        !ipSet.contains(input.getSourceIp());
                }
             })))
             .build());

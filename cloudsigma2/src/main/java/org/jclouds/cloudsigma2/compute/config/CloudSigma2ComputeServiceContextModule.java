@@ -149,10 +149,7 @@ public class CloudSigma2ComputeServiceContextModule extends
 
    public static final Map<IpProtocol, FirewallIpProtocol> ipProtocolToFirewallIpProtocol = ImmutableMap
          .<IpProtocol, FirewallIpProtocol> builder().put(IpProtocol.TCP, FirewallIpProtocol.TCP)
-         .put(IpProtocol.UDP, FirewallIpProtocol.UDP)
-         .put(IpProtocol.ALL, null)
-         .put(IpProtocol.ICMP, null)
-         .put(IpProtocol.UNRECOGNIZED, null).build();
+         .put(IpProtocol.UDP, FirewallIpProtocol.UDP).build();
 
    @Provides
    @Singleton
