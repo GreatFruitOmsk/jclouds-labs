@@ -19,6 +19,8 @@ package org.jclouds.cloudsigma2.compute.functions;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Function;
+import com.google.common.collect.LinkedHashMultimap;
+import com.google.common.collect.Sets;
 import org.jclouds.cloudsigma2.CloudSigma2Api;
 import org.jclouds.cloudsigma2.domain.FirewallIpProtocol;
 import org.jclouds.cloudsigma2.domain.FirewallPolicy;
@@ -33,6 +35,7 @@ import org.jclouds.net.domain.IpProtocol;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static com.google.common.collect.Iterables.transform;
@@ -71,11 +74,29 @@ public class FirewallPolicyToSecurityGroup implements Function<FirewallPolicy, S
       return transform(firewallPolicy.getRules(), new Function<FirewallRule, IpPermission>() {
          @Override
          public IpPermission apply(FirewallRule input) {
-            return new IpPermission.Builder()
-                  .ipProtocol(firewallIpProtocolToIpProtocol.get(input.getIpProtocol()))
-                  .toPort(Integer.parseInt(input.getDestinationPort()))
-                  .fromPort(Integer.parseInt(input.getSourcePort()))
-                  .build();
+            IpPermission.Builder permissionBuilder = new IpPermission.Builder();
+            String destinationPort = input.getDestinationPort();
+            if (destinationPort != null) {
+               if (destinationPort.contains("!")) {
+                  destinationPort = destinationPort.substring(destinationPort.indexOf("!") + 1,
+                        destinationPort.length() - 1);
+               }
+               if (destinationPort.contains(":")) {
+                  int[] ports = parsePort(destinationPort);
+                  permissionBuilder.fromPort(ports[0]);
+                  permissionBuilder.toPort(ports[1]);
+               } else {
+                  permissionBuilder.fromPort(Integer.parseInt(destinationPort));
+                  permissionBuilder.toPort(Integer.parseInt(destinationPort));
+               }
+            }
+            permissionBuilder.ipProtocol(input.getIpProtocol() != null ?
+                  firewallIpProtocolToIpProtocol.get(input.getIpProtocol()) :
+                  IpProtocol.UNRECOGNIZED);
+            permissionBuilder.tenantIdGroupNamePairs(LinkedHashMultimap.<String, String>create());
+            permissionBuilder.groupIds(Sets.<String>newLinkedHashSet());
+            permissionBuilder.cidrBlock(input.getDestinationIp() != null ? input.getDestinationIp() : "0.0.0.0/0");
+            return permissionBuilder.build();
          }
       });
    }
@@ -92,5 +113,14 @@ public class FirewallPolicyToSecurityGroup implements Function<FirewallPolicy, S
             return tagWithoutPrefix != null ? tagWithoutPrefix : tag.getName();
          }
       });
+   }
+
+   private int[] parsePort(String portRange) {
+      int[] ports = new int[2];
+      String[] portStringsArray = portRange.split(":");
+      ports[0] = Integer.parseInt(portStringsArray[0]);
+      ports[1] = Integer.parseInt(portStringsArray[1]);
+
+      return ports;
    }
 }
