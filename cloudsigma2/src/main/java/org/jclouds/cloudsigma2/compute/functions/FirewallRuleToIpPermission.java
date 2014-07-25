@@ -46,7 +46,7 @@ public class FirewallRuleToIpPermission implements Function<FirewallRule, IpPerm
       if (destinationPort != null) {
          if (destinationPort.contains("!")) {
             destinationPort = destinationPort.substring(destinationPort.indexOf("!") + 1,
-                  destinationPort.length() - 1);
+                  destinationPort.length());
          }
          if (destinationPort.contains(":")) {
             int[] ports = parsePort(destinationPort);
