@@ -17,6 +17,7 @@
 package org.jclouds.cloudsigma2.compute.extensions;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Iterables.filter;
 import static com.google.common.collect.Iterables.transform;
 
@@ -37,7 +38,10 @@ import org.jclouds.cloudsigma2.domain.FirewallIpProtocol;
 import org.jclouds.cloudsigma2.domain.FirewallPolicy;
 import org.jclouds.cloudsigma2.domain.FirewallRule;
 import org.jclouds.cloudsigma2.domain.NIC;
+import org.jclouds.cloudsigma2.domain.Server;
 import org.jclouds.cloudsigma2.domain.ServerInfo;
+import org.jclouds.cloudsigma2.domain.ServerStatus;
+import org.jclouds.collect.IterableWithMarker;
 import org.jclouds.compute.domain.SecurityGroup;
 import org.jclouds.compute.extensions.SecurityGroupExtension;
 import org.jclouds.domain.Location;
@@ -53,15 +57,18 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
    private final CloudSigma2Api api;
    private final FirewallPolicyToSecurityGroup firewallPolicyToSecurityGroup;
    private final Map<IpProtocol, FirewallIpProtocol> ipProtocolToFirewallIpProtocol;
+   private final Predicate<String> serverStopped;
 
    @Inject
    public CloudSigma2SecurityGroupExtension(CloudSigma2Api api,
-         FirewallPolicyToSecurityGroup firewallPolicyToSecurityGroup,
-         Map<IpProtocol, FirewallIpProtocol> ipProtocolToFirewallIpProtocol) {
-      this.ipProtocolToFirewallIpProtocol =
-            checkNotNull(ipProtocolToFirewallIpProtocol, "ipProtocolToFirewallIpProtocol");
+                                            FirewallPolicyToSecurityGroup firewallPolicyToSecurityGroup,
+                                            Map<IpProtocol, FirewallIpProtocol> ipProtocolToFirewallIpProtocol,
+                                            Predicate<String> serverStopped) {
       this.api = checkNotNull(api, "api");
       this.firewallPolicyToSecurityGroup = checkNotNull(firewallPolicyToSecurityGroup, "firewallPolicyToSecurityGroup");
+      this.ipProtocolToFirewallIpProtocol =
+            checkNotNull(ipProtocolToFirewallIpProtocol, "ipProtocolToFirewallIpProtocol");
+      this.serverStopped = checkNotNull(serverStopped, "serverStopped");
    }
 
    @Override
@@ -106,9 +113,14 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
 
    @Override
    public boolean removeSecurityGroup(String id) {
-      //TODO Only policies attached to servers in status stopped can be deleted.
+      FirewallPolicy firewallPolicy = api.getFirewallPolicy(id);
+      if (firewallPolicy.getServers() != null) {
+         for (Server server : firewallPolicy.getServers()) {
+            waitUntilServerIsStopped(server.getUuid());
+         }
+      }
       api.deleteFirewallPolicy(id);
-      return false;
+      return !api.listFirewallPolicies().concat().contains(firewallPolicy);
    }
 
    @Override
@@ -203,5 +215,10 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
       return false;
    }
 
-   
+
+   private void waitUntilServerIsStopped(String uuid) {
+      serverStopped.apply(uuid);
+      ServerInfo server = api.getServerInfo(uuid);
+      checkState(server.getStatus() == ServerStatus.STOPPED, "Resource is in invalid status: %s", server.getStatus());
+   }
 }
