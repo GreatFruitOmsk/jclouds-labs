@@ -16,43 +16,37 @@
  */
 package org.jclouds.cloudsigma2.compute.functions;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.Iterables.transform;
-
-import java.util.Map;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
+import com.google.common.base.Function;
 import org.jclouds.cloudsigma2.CloudSigma2Api;
-import org.jclouds.cloudsigma2.domain.FirewallIpProtocol;
 import org.jclouds.cloudsigma2.domain.FirewallPolicy;
-import org.jclouds.cloudsigma2.domain.FirewallRule;
 import org.jclouds.cloudsigma2.domain.Tag;
 import org.jclouds.compute.domain.SecurityGroup;
 import org.jclouds.compute.domain.SecurityGroupBuilder;
 import org.jclouds.compute.functions.GroupNamingConvention;
 import org.jclouds.net.domain.IpPermission;
-import org.jclouds.net.domain.IpProtocol;
 
-import com.google.common.base.Function;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.Iterables.transform;
 
 @Singleton
 public class FirewallPolicyToSecurityGroup implements Function<FirewallPolicy, SecurityGroup> {
 
    private final CloudSigma2Api api;
    private final GroupNamingConvention groupNamingConventionWithPrefix;
-   private final Map<FirewallIpProtocol, IpProtocol> firewallIpProtocolToIpProtocol;
+   private final FirewallRuleToIpPermission firewallRuleToIpPermission;
 
    @Inject
    public FirewallPolicyToSecurityGroup(CloudSigma2Api api,
-         GroupNamingConvention.Factory groupNamingConventionWithPrefix,
-         Map<FirewallIpProtocol, IpProtocol> firewallIpProtocolToIpProtocol) {
+                                        GroupNamingConvention.Factory groupNamingConventionWithPrefix,
+                                        FirewallRuleToIpPermission firewallRuleToIpPermission) {
       this.api = checkNotNull(api, "api");
       this.groupNamingConventionWithPrefix = checkNotNull(groupNamingConventionWithPrefix,
             "groupNamingConventionWithPrefix").create();
-      this.firewallIpProtocolToIpProtocol = checkNotNull(firewallIpProtocolToIpProtocol,
-            "firewallIpProtocolToIpProtocol");
+      this.firewallRuleToIpPermission = checkNotNull(firewallRuleToIpPermission, "firewallRuleToIpPermission");
+
    }
 
    @Override
@@ -68,32 +62,7 @@ public class FirewallPolicyToSecurityGroup implements Function<FirewallPolicy, S
    }
 
    private Iterable<IpPermission> readIpPermissions(FirewallPolicy firewallPolicy) {
-      // TODO: Consider extracting this function to its own class
-      return transform(firewallPolicy.getRules(), new Function<FirewallRule, IpPermission>() {
-         @Override
-         public IpPermission apply(FirewallRule input) {
-            IpPermission.Builder permissionBuilder = new IpPermission.Builder();
-            String destinationPort = input.getDestinationPort();
-            if (destinationPort != null) {
-               if (destinationPort.contains("!")) {
-                  destinationPort = destinationPort.substring(destinationPort.indexOf("!") + 1,
-                        destinationPort.length() - 1);
-               }
-               if (destinationPort.contains(":")) {
-                  int[] ports = parsePort(destinationPort);
-                  permissionBuilder.fromPort(ports[0]);
-                  permissionBuilder.toPort(ports[1]);
-               } else {
-                  permissionBuilder.fromPort(Integer.parseInt(destinationPort));
-                  permissionBuilder.toPort(Integer.parseInt(destinationPort));
-               }
-            }
-            permissionBuilder.ipProtocol(input.getIpProtocol() != null ? firewallIpProtocolToIpProtocol.get(input
-                  .getIpProtocol()) : IpProtocol.UNRECOGNIZED);
-            permissionBuilder.cidrBlock(input.getDestinationIp() != null ? input.getDestinationIp() : "0.0.0.0/0");
-            return permissionBuilder.build();
-         }
-      });
+      return transform(firewallPolicy.getRules(), firewallRuleToIpPermission);
    }
 
    private Iterable<String> readTags(FirewallPolicy firewallPolicy) {
@@ -108,13 +77,5 @@ public class FirewallPolicyToSecurityGroup implements Function<FirewallPolicy, S
             return tagWithoutPrefix != null ? tagWithoutPrefix : tag.getName();
          }
       });
-   }
-
-   private int[] parsePort(String portRange) {
-      int[] ports = new int[2];
-      String[] portStringsArray = portRange.split(":");
-      ports[0] = Integer.parseInt(portStringsArray[0]);
-      ports[1] = Integer.parseInt(portStringsArray[1]);
-      return ports;
    }
 }
