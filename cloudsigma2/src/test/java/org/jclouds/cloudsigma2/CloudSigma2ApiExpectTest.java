@@ -16,8 +16,16 @@
  */
 package org.jclouds.cloudsigma2;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Maps;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+
+import java.math.BigInteger;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import javax.ws.rs.core.MediaType;
+
 import org.jclouds.cloudsigma2.domain.AccountBalance;
 import org.jclouds.cloudsigma2.domain.CalcSubscription;
 import org.jclouds.cloudsigma2.domain.CreateSubscriptionRequest;
@@ -52,15 +60,8 @@ import org.jclouds.http.HttpResponse;
 import org.jclouds.rest.internal.BaseRestApiExpectTest;
 import org.testng.annotations.Test;
 
-import javax.ws.rs.core.MediaType;
-import java.math.BigInteger;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 
 @Test(groups = "unit")
 public class CloudSigma2ApiExpectTest extends BaseRestApiExpectTest<CloudSigma2Api> {

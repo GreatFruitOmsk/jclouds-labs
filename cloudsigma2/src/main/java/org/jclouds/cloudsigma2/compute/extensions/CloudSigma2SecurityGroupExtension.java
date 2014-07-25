@@ -19,6 +19,7 @@ package org.jclouds.cloudsigma2.compute.extensions;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Iterables.filter;
+import static com.google.common.collect.Iterables.isEmpty;
 import static com.google.common.collect.Iterables.transform;
 import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_SUSPENDED;
 
@@ -30,7 +31,6 @@ import javax.inject.Inject;
 import javax.inject.Named;
 
 import org.jclouds.cloudsigma2.CloudSigma2Api;
-import org.jclouds.cloudsigma2.compute.functions.FirewallPolicyToSecurityGroup;
 import org.jclouds.cloudsigma2.domain.FirewallAction;
 import org.jclouds.cloudsigma2.domain.FirewallDirection;
 import org.jclouds.cloudsigma2.domain.FirewallIpProtocol;
@@ -49,9 +49,11 @@ import org.jclouds.net.domain.IpProtocol;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 
 public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension {
 
@@ -63,7 +65,8 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
    @Inject
    public CloudSigma2SecurityGroupExtension(CloudSigma2Api api,
          Function<FirewallPolicy, SecurityGroup> firewallPolicyToSecurityGroup,
-         Map<IpProtocol, FirewallIpProtocol> ipProtocolToFirewallIpProtocol, @Named(TIMEOUT_NODE_SUSPENDED) Predicate<String> serverStopped) {
+         Map<IpProtocol, FirewallIpProtocol> ipProtocolToFirewallIpProtocol,
+         @Named(TIMEOUT_NODE_SUSPENDED) Predicate<String> serverStopped) {
       this.api = checkNotNull(api, "api");
       this.firewallPolicyToSecurityGroup = checkNotNull(firewallPolicyToSecurityGroup, "firewallPolicyToSecurityGroup");
       this.ipProtocolToFirewallIpProtocol = checkNotNull(ipProtocolToFirewallIpProtocol,
@@ -78,7 +81,7 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
 
    @Override
    public Set<SecurityGroup> listSecurityGroupsInLocation(Location location) {
-      return this.listSecurityGroups();
+      return listSecurityGroups();
    }
 
    @Override
@@ -114,6 +117,9 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
    @Override
    public boolean removeSecurityGroup(String id) {
       FirewallPolicy firewallPolicy = api.getFirewallPolicy(id);
+      
+      // TODO: Is it OK to stop the servers or should we fail here?
+      
       if (firewallPolicy.getServers() != null) {
          for (Server server : firewallPolicy.getServers()) {
             waitUntilServerIsStopped(server.getUuid());
@@ -125,14 +131,14 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
 
    @Override
    public SecurityGroup addIpPermission(IpPermission ipPermission, SecurityGroup group) {
-      return this.addIpPermission(ipPermission.getIpProtocol(), ipPermission.getFromPort(), ipPermission.getToPort(),
-            null, null, null, group);
+      return addIpPermission(ipPermission.getIpProtocol(), ipPermission.getFromPort(), ipPermission.getToPort(),
+            ImmutableMultimap.<String, String> of(), ImmutableSet.<String> of(), ImmutableSet.<String> of(), group);
    }
 
    @Override
    public SecurityGroup removeIpPermission(IpPermission ipPermission, SecurityGroup group) {
-      return this.removeIpPermission(ipPermission.getIpProtocol(), ipPermission.getFromPort(),
-            ipPermission.getToPort(), null, null, null, group);
+      return removeIpPermission(ipPermission.getIpProtocol(), ipPermission.getFromPort(), ipPermission.getToPort(),
+            ImmutableMultimap.<String, String> of(), ImmutableSet.<String> of(), ImmutableSet.<String> of(), group);
    }
 
    @Override
@@ -140,24 +146,34 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
          Multimap<String, String> tenantIdGroupNamePairs, Iterable<String> ipRanges, Iterable<String> groupIds,
          SecurityGroup group) {
       FirewallPolicy firewallPolicy = api.getFirewallPolicy(group.getId());
+
       List<FirewallRule> firewallRules = firewallPolicy.getRules() != null ? Lists.newArrayList(firewallPolicy
             .getRules()) : Lists.<FirewallRule> newArrayList();
-      if (ipRanges != null) {
+
+      if (!isEmpty(ipRanges)) {
          for (String ip : ipRanges) {
-            firewallRules.add(new FirewallRule.Builder().direction(FirewallDirection.IN).action(FirewallAction.DROP)
-                  .ipProtocol(ipProtocolToFirewallIpProtocol.get(protocol)).sourceIp(ip)
-                  .destinationPort(startPort + ":" + endPort).build());
+            firewallRules.add(new FirewallRule.Builder()
+               .direction(FirewallDirection.IN)
+               .action(FirewallAction.ACCEPT)
+               .ipProtocol(ipProtocolToFirewallIpProtocol.get(protocol))
+               .sourceIp(ip)
+               .destinationPort(startPort + ":" + endPort)
+               .build());
          }
       } else {
-         FirewallRule.Builder firewallRuleBuilder = new FirewallRule.Builder().direction(FirewallDirection.IN)
-               .action(FirewallAction.DROP).destinationPort(startPort + ":" + endPort);
+         FirewallRule.Builder firewallRuleBuilder = new FirewallRule.Builder()
+            .direction(FirewallDirection.IN)
+            .action(FirewallAction.ACCEPT)
+            .destinationPort(startPort + ":" + endPort);
          if (protocol != null) {
             firewallRuleBuilder.ipProtocol(ipProtocolToFirewallIpProtocol.get(protocol));
          }
          firewallRules.add(firewallRuleBuilder.build());
       }
+      
       firewallPolicy = api.editFirewallPolicy(firewallPolicy.getUuid(),
             FirewallPolicy.Builder.fromFirewallPolicy(firewallPolicy).rules(firewallRules).build());
+      
       return firewallPolicyToSecurityGroup.apply(firewallPolicy);
    }
 
@@ -165,8 +181,10 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
    public SecurityGroup removeIpPermission(final IpProtocol protocol, final int startPort, final int endPort,
          Multimap<String, String> tenantIdGroupNamePairs, Iterable<String> ipRanges, Iterable<String> groupIds,
          SecurityGroup group) {
-      final Set<String> ipSet = ipRanges != null ? ImmutableSet.copyOf(ipRanges) : null;
+      final Set<String> ipSet = ipRanges != null ? ImmutableSet.copyOf(ipRanges) : Sets.<String> newHashSet();
+      
       FirewallPolicy firewallPolicy = api.getFirewallPolicy(group.getId());
+      
       firewallPolicy = api.editFirewallPolicy(
             firewallPolicy.getUuid(),
             FirewallPolicy.Builder.fromFirewallPolicy(firewallPolicy)
@@ -175,33 +193,30 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
                      public boolean apply(FirewallRule input) {
                         return !input.getIpProtocol().equals(ipProtocolToFirewallIpProtocol.get(protocol))
                               && !input.getDestinationPort().equals(startPort + ":" + endPort)
-                              && (ipSet != null && !ipSet.contains(input.getSourceIp()));
+                              && (!ipSet.contains(input.getSourceIp()));
                      }
                   }))).build());
+      
       return firewallPolicyToSecurityGroup.apply(firewallPolicy);
    }
 
    @Override
    public boolean supportsTenantIdGroupNamePairs() {
-      // TODO Auto-generated method stub
       return false;
    }
 
    @Override
    public boolean supportsTenantIdGroupIdPairs() {
-      // TODO Auto-generated method stub
       return false;
    }
 
    @Override
    public boolean supportsGroupIds() {
-      // TODO Auto-generated method stub
       return false;
    }
 
    @Override
    public boolean supportsPortRangesForGroups() {
-      // TODO Auto-generated method stub
       return false;
    }
 
