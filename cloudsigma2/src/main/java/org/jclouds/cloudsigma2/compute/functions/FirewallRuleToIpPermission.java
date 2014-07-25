@@ -59,7 +59,7 @@ public class FirewallRuleToIpPermission implements Function<FirewallRule, IpPerm
       }
       permissionBuilder.ipProtocol(input.getIpProtocol() != null ? firewallIpProtocolToIpProtocol.get(input
             .getIpProtocol()) : IpProtocol.UNRECOGNIZED);
-      permissionBuilder.cidrBlock(input.getDestinationIp() != null ? input.getDestinationIp() : "0.0.0.0/0");
+      permissionBuilder.cidrBlock(input.getSourceIp() != null ? input.getSourceIp() : "0.0.0.0/0");
       return permissionBuilder.build();
    }
 
