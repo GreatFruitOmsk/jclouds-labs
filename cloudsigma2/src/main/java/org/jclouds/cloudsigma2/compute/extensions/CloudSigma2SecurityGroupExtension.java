@@ -17,18 +17,15 @@
 package org.jclouds.cloudsigma2.compute.extensions;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Iterables.filter;
 import static com.google.common.collect.Iterables.isEmpty;
 import static com.google.common.collect.Iterables.transform;
-import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_SUSPENDED;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 
 import org.jclouds.cloudsigma2.CloudSigma2Api;
 import org.jclouds.cloudsigma2.domain.FirewallAction;
@@ -60,18 +57,15 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
    private final CloudSigma2Api api;
    private final Function<FirewallPolicy, SecurityGroup> firewallPolicyToSecurityGroup;
    private final Map<IpProtocol, FirewallIpProtocol> ipProtocolToFirewallIpProtocol;
-   private final Predicate<String> serverStopped;
 
    @Inject
    public CloudSigma2SecurityGroupExtension(CloudSigma2Api api,
          Function<FirewallPolicy, SecurityGroup> firewallPolicyToSecurityGroup,
-         Map<IpProtocol, FirewallIpProtocol> ipProtocolToFirewallIpProtocol,
-         @Named(TIMEOUT_NODE_SUSPENDED) Predicate<String> serverStopped) {
+         Map<IpProtocol, FirewallIpProtocol> ipProtocolToFirewallIpProtocol) {
       this.api = checkNotNull(api, "api");
       this.firewallPolicyToSecurityGroup = checkNotNull(firewallPolicyToSecurityGroup, "firewallPolicyToSecurityGroup");
       this.ipProtocolToFirewallIpProtocol = checkNotNull(ipProtocolToFirewallIpProtocol,
             "ipProtocolToFirewallIpProtocol");
-      this.serverStopped = checkNotNull(serverStopped, "serverStopped");
    }
 
    @Override
@@ -117,14 +111,22 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
    @Override
    public boolean removeSecurityGroup(String id) {
       FirewallPolicy firewallPolicy = api.getFirewallPolicy(id);
-      
-      // TODO: Is it OK to stop the servers or should we fail here?
-      
-      if (firewallPolicy.getServers() != null) {
-         for (Server server : firewallPolicy.getServers()) {
-            waitUntilServerIsStopped(server.getUuid());
+      if (firewallPolicy == null) {
+         throw new IllegalStateException("There is no SecurityGroup with " + id + " id");
+      }
+
+      ImmutableSet.Builder<String> activeServerSetBuilder = ImmutableSet.builder();
+      for (Server server : firewallPolicy.getServers()) {
+         ServerInfo serverInfo = api.getServerInfo(server.getUuid());
+         if (!serverInfo.getStatus().equals(ServerStatus.STOPPED)) {
+            activeServerSetBuilder.add(serverInfo.getUuid());
          }
       }
+      Set<String> activeServerSet = activeServerSetBuilder.build();
+      if (activeServerSet.size() > 0) {
+         throw new IllegalStateException("Can't delete SecurityGroup while Nodes " + activeServerSet + " running");
+      }
+
       api.deleteFirewallPolicy(id);
       return !api.listFirewallPolicies().concat().contains(firewallPolicy);
    }
@@ -132,13 +134,13 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
    @Override
    public SecurityGroup addIpPermission(IpPermission ipPermission, SecurityGroup group) {
       return addIpPermission(ipPermission.getIpProtocol(), ipPermission.getFromPort(), ipPermission.getToPort(),
-            ImmutableMultimap.<String, String> of(), ImmutableSet.<String> of(), ImmutableSet.<String> of(), group);
+            ImmutableMultimap.<String, String>of(), ImmutableSet.<String>of(), ImmutableSet.<String>of(), group);
    }
 
    @Override
    public SecurityGroup removeIpPermission(IpPermission ipPermission, SecurityGroup group) {
       return removeIpPermission(ipPermission.getIpProtocol(), ipPermission.getFromPort(), ipPermission.getToPort(),
-            ImmutableMultimap.<String, String> of(), ImmutableSet.<String> of(), ImmutableSet.<String> of(), group);
+            ImmutableMultimap.<String, String>of(), ImmutableSet.<String>of(), ImmutableSet.<String>of(), group);
    }
 
    @Override
@@ -218,11 +220,5 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
    @Override
    public boolean supportsPortRangesForGroups() {
       return false;
-   }
-
-   private void waitUntilServerIsStopped(String uuid) {
-      serverStopped.apply(uuid);
-      ServerInfo server = api.getServerInfo(uuid);
-      checkState(server.getStatus() == ServerStatus.STOPPED, "Resource is in invalid status: %s", server.getStatus());
    }
 }
