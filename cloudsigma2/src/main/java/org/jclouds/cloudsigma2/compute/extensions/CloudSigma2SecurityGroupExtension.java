@@ -20,16 +20,15 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Iterables.filter;
 import static com.google.common.collect.Iterables.transform;
+import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_SUSPENDED;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
+import javax.inject.Inject;
+import javax.inject.Named;
+
 import org.jclouds.cloudsigma2.CloudSigma2Api;
 import org.jclouds.cloudsigma2.compute.functions.FirewallPolicyToSecurityGroup;
 import org.jclouds.cloudsigma2.domain.FirewallAction;
@@ -41,33 +40,34 @@ import org.jclouds.cloudsigma2.domain.NIC;
 import org.jclouds.cloudsigma2.domain.Server;
 import org.jclouds.cloudsigma2.domain.ServerInfo;
 import org.jclouds.cloudsigma2.domain.ServerStatus;
-import org.jclouds.collect.IterableWithMarker;
 import org.jclouds.compute.domain.SecurityGroup;
 import org.jclouds.compute.extensions.SecurityGroupExtension;
 import org.jclouds.domain.Location;
 import org.jclouds.net.domain.IpPermission;
 import org.jclouds.net.domain.IpProtocol;
 
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
-
-import javax.inject.Inject;
 
 public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension {
 
    private final CloudSigma2Api api;
-   private final FirewallPolicyToSecurityGroup firewallPolicyToSecurityGroup;
+   private final Function<FirewallPolicy, SecurityGroup> firewallPolicyToSecurityGroup;
    private final Map<IpProtocol, FirewallIpProtocol> ipProtocolToFirewallIpProtocol;
    private final Predicate<String> serverStopped;
 
    @Inject
    public CloudSigma2SecurityGroupExtension(CloudSigma2Api api,
-                                            FirewallPolicyToSecurityGroup firewallPolicyToSecurityGroup,
-                                            Map<IpProtocol, FirewallIpProtocol> ipProtocolToFirewallIpProtocol,
-                                            Predicate<String> serverStopped) {
+         Function<FirewallPolicy, SecurityGroup> firewallPolicyToSecurityGroup,
+         Map<IpProtocol, FirewallIpProtocol> ipProtocolToFirewallIpProtocol, @Named(TIMEOUT_NODE_SUSPENDED) Predicate<String> serverStopped) {
       this.api = checkNotNull(api, "api");
       this.firewallPolicyToSecurityGroup = checkNotNull(firewallPolicyToSecurityGroup, "firewallPolicyToSecurityGroup");
-      this.ipProtocolToFirewallIpProtocol =
-            checkNotNull(ipProtocolToFirewallIpProtocol, "ipProtocolToFirewallIpProtocol");
+      this.ipProtocolToFirewallIpProtocol = checkNotNull(ipProtocolToFirewallIpProtocol,
+            "ipProtocolToFirewallIpProtocol");
       this.serverStopped = checkNotNull(serverStopped, "serverStopped");
    }
 
@@ -131,8 +131,8 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
 
    @Override
    public SecurityGroup removeIpPermission(IpPermission ipPermission, SecurityGroup group) {
-      return this.removeIpPermission(ipPermission.getIpProtocol(), ipPermission.getFromPort(), ipPermission.getToPort(),
-            null, null, null, group);
+      return this.removeIpPermission(ipPermission.getIpProtocol(), ipPermission.getFromPort(),
+            ipPermission.getToPort(), null, null, null, group);
    }
 
    @Override
@@ -140,33 +140,24 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
          Multimap<String, String> tenantIdGroupNamePairs, Iterable<String> ipRanges, Iterable<String> groupIds,
          SecurityGroup group) {
       FirewallPolicy firewallPolicy = api.getFirewallPolicy(group.getId());
-      List<FirewallRule> firewallRules = firewallPolicy.getRules() != null ?
-            Lists.newArrayList(firewallPolicy.getRules()) :
-            Lists.<FirewallRule>newArrayList();
+      List<FirewallRule> firewallRules = firewallPolicy.getRules() != null ? Lists.newArrayList(firewallPolicy
+            .getRules()) : Lists.<FirewallRule> newArrayList();
       if (ipRanges != null) {
          for (String ip : ipRanges) {
-            firewallRules.add(new FirewallRule.Builder()
-                  .direction(FirewallDirection.IN)
-                  .action(FirewallAction.DROP)
-                  .ipProtocol(ipProtocolToFirewallIpProtocol.get(protocol))
-                  .sourceIp(ip)
-                  .destinationPort(startPort + ":" + endPort)
-                  .build());
+            firewallRules.add(new FirewallRule.Builder().direction(FirewallDirection.IN).action(FirewallAction.DROP)
+                  .ipProtocol(ipProtocolToFirewallIpProtocol.get(protocol)).sourceIp(ip)
+                  .destinationPort(startPort + ":" + endPort).build());
          }
       } else {
-         FirewallRule.Builder firewallRuleBuilder = new FirewallRule.Builder()
-               .direction(FirewallDirection.IN)
-               .action(FirewallAction.DROP)
-               .destinationPort(startPort + ":" + endPort);
+         FirewallRule.Builder firewallRuleBuilder = new FirewallRule.Builder().direction(FirewallDirection.IN)
+               .action(FirewallAction.DROP).destinationPort(startPort + ":" + endPort);
          if (protocol != null) {
             firewallRuleBuilder.ipProtocol(ipProtocolToFirewallIpProtocol.get(protocol));
          }
          firewallRules.add(firewallRuleBuilder.build());
       }
-      firewallPolicy = api.editFirewallPolicy(firewallPolicy.getUuid(), FirewallPolicy.Builder
-            .fromFirewallPolicy(firewallPolicy)
-            .rules(firewallRules)
-            .build());
+      firewallPolicy = api.editFirewallPolicy(firewallPolicy.getUuid(),
+            FirewallPolicy.Builder.fromFirewallPolicy(firewallPolicy).rules(firewallRules).build());
       return firewallPolicyToSecurityGroup.apply(firewallPolicy);
    }
 
@@ -176,18 +167,17 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
          SecurityGroup group) {
       final Set<String> ipSet = ipRanges != null ? ImmutableSet.copyOf(ipRanges) : null;
       FirewallPolicy firewallPolicy = api.getFirewallPolicy(group.getId());
-      firewallPolicy = api.editFirewallPolicy(firewallPolicy.getUuid(), FirewallPolicy.Builder
-            .fromFirewallPolicy(firewallPolicy)
-            .rules(ImmutableList.copyOf(filter(firewallPolicy.getRules(), new Predicate<FirewallRule>() {
-               @Override
-               public boolean apply(FirewallRule input) {
-                  return !input.getIpProtocol().equals(ipProtocolToFirewallIpProtocol.get(protocol)) &&
-                        !input.getDestinationPort().equals(startPort + ":" + endPort) &&
-                              (ipSet != null &&
-                              !ipSet.contains(input.getSourceIp()));
-               }
-            })))
-            .build());
+      firewallPolicy = api.editFirewallPolicy(
+            firewallPolicy.getUuid(),
+            FirewallPolicy.Builder.fromFirewallPolicy(firewallPolicy)
+                  .rules(ImmutableList.copyOf(filter(firewallPolicy.getRules(), new Predicate<FirewallRule>() {
+                     @Override
+                     public boolean apply(FirewallRule input) {
+                        return !input.getIpProtocol().equals(ipProtocolToFirewallIpProtocol.get(protocol))
+                              && !input.getDestinationPort().equals(startPort + ":" + endPort)
+                              && (ipSet != null && !ipSet.contains(input.getSourceIp()));
+                     }
+                  }))).build());
       return firewallPolicyToSecurityGroup.apply(firewallPolicy);
    }
 
@@ -214,7 +204,6 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
       // TODO Auto-generated method stub
       return false;
    }
-
 
    private void waitUntilServerIsStopped(String uuid) {
       serverStopped.apply(uuid);
