@@ -17,6 +17,7 @@
 package org.jclouds.cloudsigma2.compute.extensions;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.Iterables.any;
 import static com.google.common.collect.Iterables.filter;
 import static com.google.common.collect.Iterables.isEmpty;
 import static com.google.common.collect.Iterables.transform;
@@ -112,19 +113,17 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
    public boolean removeSecurityGroup(String id) {
       FirewallPolicy firewallPolicy = api.getFirewallPolicy(id);
       if (firewallPolicy == null) {
-         throw new IllegalStateException("There is no SecurityGroup with " + id + " id");
+         throw new IllegalArgumentException("There is no SecurityGroup with " + id + " id");
       }
 
-      ImmutableSet.Builder<String> activeServerSetBuilder = ImmutableSet.builder();
-      for (Server server : firewallPolicy.getServers()) {
-         ServerInfo serverInfo = api.getServerInfo(server.getUuid());
-         if (!serverInfo.getStatus().equals(ServerStatus.STOPPED)) {
-            activeServerSetBuilder.add(serverInfo.getUuid());
+      if (any(firewallPolicy.getServers(), new Predicate<Server>() {
+         @Override
+         public boolean apply(Server server) {
+            ServerInfo serverInfo = api.getServerInfo(server.getUuid());
+            return !ServerStatus.STOPPED.equals(serverInfo.getStatus());
          }
-      }
-      Set<String> activeServerSet = activeServerSetBuilder.build();
-      if (activeServerSet.size() > 0) {
-         throw new IllegalStateException("Can't delete SecurityGroup while Nodes " + activeServerSet + " running");
+      })) {
+         throw new IllegalStateException("Can't delete SecurityGroup while there are nodes running in them");
       }
 
       api.deleteFirewallPolicy(id);
