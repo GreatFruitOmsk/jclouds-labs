@@ -16,12 +16,6 @@
  */
 package org.jclouds.cloudsigma2.compute.functions;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
-
-import java.util.Map;
-
 import org.jclouds.compute.options.TemplateOptions;
 import org.jclouds.scriptbuilder.domain.OsFamily;
 import org.jclouds.scriptbuilder.domain.Statement;
@@ -29,6 +23,12 @@ import org.jclouds.scriptbuilder.domain.StatementList;
 import org.jclouds.scriptbuilder.statements.ssh.InstallRSAPrivateKey;
 import org.jclouds.ssh.SshKeys;
 import org.testng.annotations.Test;
+
+import java.util.Map;
+
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 
 /**
  * Unit tests for the {@link TemplateOptionsToStatementWithoutPublicKey} class.

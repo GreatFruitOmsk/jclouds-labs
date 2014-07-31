@@ -16,29 +16,19 @@
  */
 package org.jclouds.cloudsigma2.compute.strategy;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.base.Throwables.propagate;
-import static com.google.common.collect.Iterables.filter;
-import static com.google.common.collect.Iterables.transform;
-import static com.google.common.collect.Lists.transform;
-import static com.google.common.util.concurrent.Futures.allAsList;
-import static com.google.common.util.concurrent.Futures.getUnchecked;
-import static org.jclouds.cloudsigma2.config.CloudSigma2Properties.PROPERTY_DELETE_DRIVES;
-import static org.jclouds.cloudsigma2.config.CloudSigma2Properties.PROPERTY_VNC_PASSWORD;
-import static org.jclouds.cloudsigma2.config.CloudSigma2Properties.TIMEOUT_DRIVE_CLONED;
-import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_SUSPENDED;
-
-import java.math.BigInteger;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-
-import javax.annotation.Resource;
-import javax.inject.Named;
-import javax.inject.Singleton;
-
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSet.Builder;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.inject.Inject;
 import org.jclouds.Constants;
 import org.jclouds.cloudsigma2.CloudSigma2Api;
 import org.jclouds.cloudsigma2.compute.options.CloudSigma2TemplateOptions;
@@ -73,19 +63,27 @@ import org.jclouds.domain.Location;
 import org.jclouds.domain.LoginCredentials;
 import org.jclouds.logging.Logger;
 
-import com.google.common.base.Function;
-import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSet.Builder;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.inject.Inject;
+import javax.annotation.Resource;
+import javax.inject.Named;
+import javax.inject.Singleton;
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Throwables.propagate;
+import static com.google.common.collect.Iterables.filter;
+import static com.google.common.collect.Iterables.transform;
+import static com.google.common.collect.Lists.transform;
+import static com.google.common.util.concurrent.Futures.allAsList;
+import static com.google.common.util.concurrent.Futures.getUnchecked;
+import static org.jclouds.cloudsigma2.config.CloudSigma2Properties.PROPERTY_DELETE_DRIVES;
+import static org.jclouds.cloudsigma2.config.CloudSigma2Properties.PROPERTY_VNC_PASSWORD;
+import static org.jclouds.cloudsigma2.config.CloudSigma2Properties.TIMEOUT_DRIVE_CLONED;
+import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_SUSPENDED;
 
 @Singleton
 public class CloudSigma2ComputeServiceAdapter implements
@@ -105,11 +103,13 @@ public class CloudSigma2ComputeServiceAdapter implements
 
    @Inject
    public CloudSigma2ComputeServiceAdapter(CloudSigma2Api api,
-         @Named(Constants.PROPERTY_USER_THREADS) ListeningExecutorService userExecutor,
-         @Named(PROPERTY_VNC_PASSWORD) String defaultVncPassword,
-         @Named(TIMEOUT_DRIVE_CLONED) Predicate<DriveInfo> driveCloned,
-         @Named(TIMEOUT_NODE_SUSPENDED) Predicate<String> serverStopped,
-         @Named(PROPERTY_DELETE_DRIVES) boolean destroyDrives, GroupNamingConvention.Factory groupNamingConvention) {
+                                           @Named(Constants.PROPERTY_USER_THREADS) ListeningExecutorService
+                                                 userExecutor,
+                                           @Named(PROPERTY_VNC_PASSWORD) String defaultVncPassword,
+                                           @Named(TIMEOUT_DRIVE_CLONED) Predicate<DriveInfo> driveCloned,
+                                           @Named(TIMEOUT_NODE_SUSPENDED) Predicate<String> serverStopped,
+                                           @Named(PROPERTY_DELETE_DRIVES) boolean destroyDrives,
+                                           GroupNamingConvention.Factory groupNamingConvention) {
       this.api = checkNotNull(api, "api");
       this.userExecutor = checkNotNull(userExecutor, "userExecutor");
       this.defaultVncPassword = checkNotNull(defaultVncPassword, "defaultVncPassword");
@@ -121,7 +121,7 @@ public class CloudSigma2ComputeServiceAdapter implements
 
    @Override
    public NodeAndInitialCredentials<ServerInfo> createNodeWithGroupEncodedIntoName(String group, String name,
-         Template template) {
+                                                                                   Template template) {
       CloudSigma2TemplateOptions options = template.getOptions().as(CloudSigma2TemplateOptions.class);
       Image image = template.getImage();
       Hardware hardware = template.getHardware();
@@ -174,7 +174,7 @@ public class CloudSigma2ComputeServiceAdapter implements
       ServerInfo serverInfo = null;
       try {
          logger.debug(">> creating server...");
-         
+
          serverInfo = api.createServer(new ServerInfo.Builder()
                .name(name)
                .cpu((int) hardware.getProcessors().get(0).getSpeed())
@@ -220,7 +220,7 @@ public class CloudSigma2ComputeServiceAdapter implements
          for (double cpu : cpuSetBuilder.build()) {
             hardware.add(new HardwareBuilder().ids(String.format("cpu=%f,ram=%d", cpu, ram))
                   .processor(new Processor(1, cpu)).ram(ram)
-                  .volumes(ImmutableList.<Volume> of(new VolumeImpl(null, true, false))).build());
+                  .volumes(ImmutableList.<Volume>of(new VolumeImpl(null, true, false))).build());
          }
       }
       return hardware.build();
@@ -239,7 +239,7 @@ public class CloudSigma2ComputeServiceAdapter implements
    @Override
    public Iterable<Location> listLocations() {
       // Nothing to return here. Each provider will configure the locations
-      return ImmutableSet.<Location> of();
+      return ImmutableSet.<Location>of();
    }
 
    @Override
@@ -250,7 +250,7 @@ public class CloudSigma2ComputeServiceAdapter implements
    @Override
    public void destroyNode(String uuid) {
       ServerInfo server = api.getServerInfo(uuid);
-      
+
       if (ServerStatus.RUNNING == server.getStatus()) {
          api.stopServer(uuid);
          waitUntilServerIsStopped(uuid);

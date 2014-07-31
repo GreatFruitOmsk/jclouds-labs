@@ -29,7 +29,7 @@ import java.util.Map;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @Singleton
-public class FirewallRuleToIpPermission implements Function<FirewallRule, IpPermission>{
+public class FirewallRuleToIpPermission implements Function<FirewallRule, IpPermission> {
 
    private final Map<FirewallIpProtocol, IpProtocol> firewallIpProtocolToIpProtocol;
 

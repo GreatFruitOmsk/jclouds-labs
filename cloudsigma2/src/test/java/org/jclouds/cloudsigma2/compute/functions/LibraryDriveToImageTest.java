@@ -16,9 +16,7 @@
  */
 package org.jclouds.cloudsigma2.compute.functions;
 
-import static org.jclouds.cloudsigma2.compute.config.CloudSigma2ComputeServiceContextModule.driveStatusToImageStatus;
-import static org.testng.Assert.assertEquals;
-
+import com.google.common.collect.ImmutableMap;
 import org.jclouds.cloudsigma2.domain.DriveStatus;
 import org.jclouds.cloudsigma2.domain.LibraryDrive;
 import org.jclouds.compute.domain.Image;
@@ -28,7 +26,8 @@ import org.jclouds.compute.domain.OsFamily;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import com.google.common.collect.ImmutableMap;
+import static org.jclouds.cloudsigma2.compute.config.CloudSigma2ComputeServiceContextModule.driveStatusToImageStatus;
+import static org.testng.Assert.assertEquals;
 
 @Test(groups = "unit", testName = "LibraryDriveToImageTest")
 public class LibraryDriveToImageTest {

@@ -16,13 +16,6 @@
  */
 package org.jclouds.cloudsigma2.compute.functions;
 
-import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.replay;
-import static org.easymock.EasyMock.verify;
-import static org.testng.Assert.assertEquals;
-
-import java.math.BigInteger;
-
 import org.easymock.EasyMock;
 import org.jclouds.cloudsigma2.CloudSigma2Api;
 import org.jclouds.cloudsigma2.domain.DeviceEmulationType;
@@ -33,6 +26,13 @@ import org.jclouds.compute.domain.Volume;
 import org.jclouds.compute.domain.VolumeBuilder;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import java.math.BigInteger;
+
+import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.replay;
+import static org.easymock.EasyMock.verify;
+import static org.testng.Assert.assertEquals;
 
 @Test(groups = "unit", testName = "ServerDriveToVolumeTest")
 public class ServerDriveToVolumeTest {
@@ -64,16 +64,16 @@ public class ServerDriveToVolumeTest {
       CloudSigma2Api api = EasyMock.createMock(CloudSigma2Api.class);
 
       DriveInfo mockDrive = new DriveInfo.Builder()
-         .uuid(input.getDrive().getUuid())
-         .size(new BigInteger("1024000000"))
-         .build();
-         
+            .uuid(input.getDrive().getUuid())
+            .size(new BigInteger("1024000000"))
+            .build();
+
       expect(api.getDriveInfo(input.getDrive().getUuid())).andReturn(mockDrive);
       replay(api);
-      
+
       ServerDriveToVolume function = new ServerDriveToVolume(api);
       assertEquals(function.apply(input), expected);
-      
+
       verify(api);
    }
 }

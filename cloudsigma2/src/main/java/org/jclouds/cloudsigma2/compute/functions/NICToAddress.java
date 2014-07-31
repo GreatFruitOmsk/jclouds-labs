@@ -16,14 +16,13 @@
  */
 package org.jclouds.cloudsigma2.compute.functions;
 
-import javax.inject.Singleton;
-
+import com.google.common.base.Function;
 import org.jclouds.cloudsigma2.domain.IPConfiguration;
 import org.jclouds.cloudsigma2.domain.IPConfigurationType;
 import org.jclouds.cloudsigma2.domain.NIC;
-
-import com.google.common.base.Function;
 import org.jclouds.cloudsigma2.domain.NICStats;
+
+import javax.inject.Singleton;
 
 @Singleton
 public final class NICToAddress implements Function<NIC, String> {

@@ -16,17 +16,8 @@
  */
 package org.jclouds.cloudsigma2.compute.functions;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Predicates.notNull;
-import static com.google.common.collect.Iterables.filter;
-import static com.google.common.collect.Iterables.getOnlyElement;
-import static com.google.common.collect.Iterables.transform;
-
-import java.util.Map;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
+import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
 import org.jclouds.cloudsigma2.CloudSigma2Api;
 import org.jclouds.cloudsigma2.domain.ServerDrive;
 import org.jclouds.cloudsigma2.domain.ServerInfo;
@@ -41,8 +32,15 @@ import org.jclouds.domain.Credentials;
 import org.jclouds.domain.LoginCredentials;
 import org.jclouds.location.suppliers.all.JustProvider;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Iterables;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.Map;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Predicates.notNull;
+import static com.google.common.collect.Iterables.filter;
+import static com.google.common.collect.Iterables.getOnlyElement;
+import static com.google.common.collect.Iterables.transform;
 
 @Singleton
 public class ServerInfoToNodeMetadata implements Function<ServerInfo, NodeMetadata> {
@@ -58,9 +56,10 @@ public class ServerInfoToNodeMetadata implements Function<ServerInfo, NodeMetada
 
    @Inject
    public ServerInfoToNodeMetadata(ServerDriveToVolume serverDriveToVolume, NICToAddress nicToAddress,
-         Map<ServerStatus, NodeMetadata.Status> serverStatusToNodeStatus,
-         GroupNamingConvention.Factory groupNamingConvention, Map<String, Credentials> credentialStore,
-         JustProvider locations, CloudSigma2Api api) {
+                                   Map<ServerStatus, NodeMetadata.Status> serverStatusToNodeStatus,
+                                   GroupNamingConvention.Factory groupNamingConvention,
+                                   Map<String, Credentials> credentialStore,
+                                   JustProvider locations, CloudSigma2Api api) {
       this.serverDriveToVolume = checkNotNull(serverDriveToVolume, "serverDriveToVolume");
       this.nicToAddress = checkNotNull(nicToAddress, "nicToAddress");
       this.serverStatusToNodeStatus = checkNotNull(serverStatusToNodeStatus, "serverStatusToNodeStatus");
@@ -99,10 +98,10 @@ public class ServerInfoToNodeMetadata implements Function<ServerInfo, NodeMetada
 
       return builder.build();
    }
-   
+
    private String extractImageId(ServerInfo serverInfo) {
       String imageId = serverInfo.getMeta().get("image_id");
-      
+
       if (imageId == null) {
          ServerDrive serverBootDrive = null;
          for (ServerDrive serverDrive : serverInfo.getDrives()) {
@@ -115,22 +114,22 @@ public class ServerInfoToNodeMetadata implements Function<ServerInfo, NodeMetada
             imageId = serverBootDrive.getDriveUuid();
          }
       }
-      
+
       return imageId;
    }
-   
+
    private Iterable<String> readTags(ServerInfo serverInfo) {
-     return transform(serverInfo.getTags(), new Function<Tag, String>() {
-        @Override
-        public String apply(Tag input) {
-           Tag tag = api.getTagInfo(input.getUuid());
-           if (tag.getName() == null) {
-              return input.getUuid();
-           }
-           String tagWithoutPrefix = groupNamingConventionWithPrefix.groupInSharedNameOrNull(tag.getName());
-           return tagWithoutPrefix != null? tagWithoutPrefix : tag.getName();
-        }
-     });
+      return transform(serverInfo.getTags(), new Function<Tag, String>() {
+         @Override
+         public String apply(Tag input) {
+            Tag tag = api.getTagInfo(input.getUuid());
+            if (tag.getName() == null) {
+               return input.getUuid();
+            }
+            String tagWithoutPrefix = groupNamingConventionWithPrefix.groupInSharedNameOrNull(tag.getName());
+            return tagWithoutPrefix != null ? tagWithoutPrefix : tag.getName();
+         }
+      });
    }
 
 }

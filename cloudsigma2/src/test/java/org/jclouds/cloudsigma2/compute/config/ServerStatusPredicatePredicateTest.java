@@ -16,6 +16,12 @@
  */
 package org.jclouds.cloudsigma2.compute.config;
 
+import org.easymock.EasyMock;
+import org.jclouds.cloudsigma2.CloudSigma2Api;
+import org.jclouds.cloudsigma2.compute.config.CloudSigma2ComputeServiceContextModule.ServerStatusPredicate;
+import org.jclouds.cloudsigma2.domain.ServerInfo;
+import org.testng.annotations.Test;
+
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
@@ -23,12 +29,6 @@ import static org.jclouds.cloudsigma2.domain.ServerStatus.STOPPED;
 import static org.jclouds.cloudsigma2.domain.ServerStatus.STOPPING;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
-
-import org.easymock.EasyMock;
-import org.jclouds.cloudsigma2.CloudSigma2Api;
-import org.jclouds.cloudsigma2.compute.config.CloudSigma2ComputeServiceContextModule.ServerStatusPredicate;
-import org.jclouds.cloudsigma2.domain.ServerInfo;
-import org.testng.annotations.Test;
 
 /**
  * Unit tests for the server status predicate.

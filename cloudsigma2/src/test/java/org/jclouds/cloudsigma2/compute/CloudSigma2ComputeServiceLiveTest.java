@@ -16,6 +16,7 @@
  */
 package org.jclouds.cloudsigma2.compute;
 
+import com.google.inject.Module;
 import org.jclouds.compute.domain.ExecResponse;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.Template;
@@ -24,14 +25,12 @@ import org.jclouds.compute.internal.BaseComputeServiceLiveTest;
 import org.jclouds.sshj.config.SshjSshClientModule;
 import org.testng.annotations.Test;
 
-import com.google.inject.Module;
-
 @Test(groups = "live", testName = "CloudSigma2ComputeServiceLiveTest")
 public class CloudSigma2ComputeServiceLiveTest extends BaseComputeServiceLiveTest {
 
    public CloudSigma2ComputeServiceLiveTest() {
       provider = "cloudsigma2";
-      
+
    }
 
    @Override

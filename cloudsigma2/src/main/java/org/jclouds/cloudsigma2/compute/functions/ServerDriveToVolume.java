@@ -16,18 +16,17 @@
  */
 package org.jclouds.cloudsigma2.compute.functions;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
+import com.google.common.base.Function;
 import org.jclouds.cloudsigma2.CloudSigma2Api;
 import org.jclouds.cloudsigma2.domain.DriveInfo;
 import org.jclouds.cloudsigma2.domain.ServerDrive;
 import org.jclouds.compute.domain.Volume;
 import org.jclouds.compute.domain.VolumeBuilder;
 
-import com.google.common.base.Function;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 @Singleton
 public final class ServerDriveToVolume implements Function<ServerDrive, Volume> {

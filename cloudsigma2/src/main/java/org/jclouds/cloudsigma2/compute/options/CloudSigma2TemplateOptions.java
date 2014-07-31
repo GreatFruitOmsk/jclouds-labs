@@ -16,11 +16,10 @@
  */
 package org.jclouds.cloudsigma2.compute.options;
 
+import com.google.common.base.Objects.ToStringHelper;
 import org.jclouds.cloudsigma2.domain.DeviceEmulationType;
 import org.jclouds.cloudsigma2.domain.Model;
 import org.jclouds.compute.options.TemplateOptions;
-
-import com.google.common.base.Objects.ToStringHelper;
 
 public class CloudSigma2TemplateOptions extends TemplateOptions {
 
@@ -43,7 +42,7 @@ public class CloudSigma2TemplateOptions extends TemplateOptions {
       this.nicModel = nicModel;
       return this;
    }
-   
+
    /**
     * Configures the vnc password.
     */
@@ -59,7 +58,7 @@ public class CloudSigma2TemplateOptions extends TemplateOptions {
    public Model getNicModel() {
       return nicModel;
    }
-   
+
    public String getVncPassword() {
       return vncPassword;
    }
@@ -141,7 +140,7 @@ public class CloudSigma2TemplateOptions extends TemplateOptions {
          options.nicModel(nicModel);
          return options;
       }
-      
+
       /**
        * @see CloudSigma2TemplateOptions#vncPassword(String)
        */

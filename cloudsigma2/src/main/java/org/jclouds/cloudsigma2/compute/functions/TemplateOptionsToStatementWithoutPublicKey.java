@@ -16,8 +16,7 @@
  */
 package org.jclouds.cloudsigma2.compute.functions;
 
-import javax.inject.Singleton;
-
+import com.google.common.collect.ImmutableList;
 import org.jclouds.compute.functions.TemplateOptionsToStatement;
 import org.jclouds.compute.options.TemplateOptions;
 import org.jclouds.scriptbuilder.InitScript;
@@ -25,11 +24,11 @@ import org.jclouds.scriptbuilder.domain.Statement;
 import org.jclouds.scriptbuilder.domain.StatementList;
 import org.jclouds.scriptbuilder.statements.ssh.InstallRSAPrivateKey;
 
-import com.google.common.collect.ImmutableList;
+import javax.inject.Singleton;
 
 /**
  * Convert the template options into a statement, but ignoring the public key.
- * <p>
+ * <p/>
  * The {@link org.jclouds.cloudsigma2.compute.strategy.CloudSigma2ComputeServiceAdapter} already takes care of
  * installing it using the server metadata.
  */

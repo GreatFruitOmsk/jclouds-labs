@@ -52,13 +52,13 @@ public class FirewallPolicyToSecurityGroup implements Function<FirewallPolicy, S
    @Override
    public SecurityGroup apply(FirewallPolicy input) {
       return new SecurityGroupBuilder()
-         .ids(input.getUuid())
-         .name(input.getName())
-         .uri(input.getResourceUri())
-         .userMetadata(input.getMeta())
-         .ipPermissions(readIpPermissions(input))
-         .tags(readTags(input))
-         .build();
+            .ids(input.getUuid())
+            .name(input.getName())
+            .uri(input.getResourceUri())
+            .userMetadata(input.getMeta())
+            .ipPermissions(readIpPermissions(input))
+            .tags(readTags(input))
+            .build();
    }
 
    private Iterable<IpPermission> readIpPermissions(FirewallPolicy firewallPolicy) {

@@ -16,11 +16,7 @@
  */
 package org.jclouds.cloudsigma2.compute.functions;
 
-import static org.testng.Assert.assertEquals;
-
-import java.net.URI;
-import java.util.List;
-
+import com.google.common.collect.ImmutableList;
 import org.jclouds.cloudsigma2.domain.FirewallPolicy;
 import org.jclouds.cloudsigma2.domain.FirewallRule;
 import org.jclouds.cloudsigma2.domain.IP;
@@ -32,7 +28,10 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.testng.collections.Lists;
 
-import com.google.common.collect.ImmutableList;
+import java.net.URI;
+import java.util.List;
+
+import static org.testng.Assert.assertEquals;
 
 @Test(groups = "unit", testName = "NICToAddressTest")
 public class NICToAddressTest {
@@ -84,7 +83,7 @@ public class NICToAddressTest {
 
    public void testConvertNICs() {
       NICToAddress function = new NICToAddress();
-      for (int i = 0; i < input.size() -1; i++) {
+      for (int i = 0; i < input.size() - 1; i++) {
          assertEquals(function.apply(input.get(i)), expected.get(i));
       }
    }

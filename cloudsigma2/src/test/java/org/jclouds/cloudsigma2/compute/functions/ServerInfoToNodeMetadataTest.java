@@ -16,17 +16,13 @@
  */
 package org.jclouds.cloudsigma2.compute.functions;
 
-import static com.google.common.collect.Iterables.getOnlyElement;
-import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.replay;
-import static org.easymock.EasyMock.verify;
-import static org.jclouds.cloudsigma2.compute.config.CloudSigma2ComputeServiceContextModule.serverStatusToNodeStatus;
-import static org.testng.Assert.assertEquals;
-
-import java.math.BigInteger;
-import java.net.URI;
-import java.util.Map;
-
+import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.name.Names;
 import org.easymock.EasyMock;
 import org.jclouds.cloudsigma2.CloudSigma2Api;
 import org.jclouds.cloudsigma2.CloudSigma2ApiMetadata;
@@ -53,13 +49,16 @@ import org.jclouds.location.suppliers.all.JustProvider;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import com.google.common.base.Suppliers;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.name.Names;
+import java.math.BigInteger;
+import java.net.URI;
+import java.util.Map;
+
+import static com.google.common.collect.Iterables.getOnlyElement;
+import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.replay;
+import static org.easymock.EasyMock.verify;
+import static org.jclouds.cloudsigma2.compute.config.CloudSigma2ComputeServiceContextModule.serverStatusToNodeStatus;
+import static org.testng.Assert.assertEquals;
 
 @Test(groups = "unit", testName = "ServerInfoToNodeMetadataTest")
 public class ServerInfoToNodeMetadataTest {
@@ -75,8 +74,8 @@ public class ServerInfoToNodeMetadataTest {
    public void setUp() throws Exception {
       CloudSigma2ApiMetadata metadata = new CloudSigma2ApiMetadata();
       justProvider = new JustProvider(metadata.getId(), Suppliers.ofInstance(URI.create(metadata
-            .getDefaultEndpoint().get())), ImmutableSet.<String> of());
-      
+            .getDefaultEndpoint().get())), ImmutableSet.<String>of());
+
       input = new ServerInfo.Builder()
             .uuid("a19a425f-9e92-42f6-89fb-6361203071bb")
             .name("jclouds-cloudsigma-test_acc_full_server")
@@ -97,11 +96,11 @@ public class ServerInfoToNodeMetadataTest {
                         .ip(new IP.Builder().uuid("1.2.3.4").build())
                         .build())
                   .build()))
-             .meta(ImmutableMap.of("foo", "bar", "image_id", "image"))
-             .tags(ImmutableList.of(new Tag.Builder().uuid("foo").name("foo").build(),
-                   new Tag.Builder().uuid("jclouds-cloudsigma2-s").name("jclouds-cloudsigma2-s").build(),
-                   new Tag.Builder().uuid("jclouds-cloudsigma2").name("jclouds-cloudsigma2").build()
-                   ))
+            .meta(ImmutableMap.of("foo", "bar", "image_id", "image"))
+            .tags(ImmutableList.of(new Tag.Builder().uuid("foo").name("foo").build(),
+                  new Tag.Builder().uuid("jclouds-cloudsigma2-s").name("jclouds-cloudsigma2-s").build(),
+                  new Tag.Builder().uuid("jclouds-cloudsigma2").name("jclouds-cloudsigma2").build()
+            ))
             .build();
 
       expected = new NodeMetadataBuilder()
@@ -136,14 +135,14 @@ public class ServerInfoToNodeMetadataTest {
             .tags(ImmutableList.of("foo", "cloudsigma2-s", "cloudsigma2"))
             .credentials(credentials)
             .build();
-      
+
       namingConvention = Guice.createInjector(new AbstractModule() {
          @Override
          protected void configure() {
             Names.bindProperties(binder(), new CloudSigma2ApiMetadata().getDefaultProperties());
          }
       }).getInstance(GroupNamingConvention.Factory.class);
-      
+
       credentialStore = ImmutableMap.of("node#a19a425f-9e92-42f6-89fb-6361203071bb", (Credentials) credentials);
    }
 
@@ -152,23 +151,24 @@ public class ServerInfoToNodeMetadataTest {
 
       for (ServerDrive drive : input.getDrives()) {
          DriveInfo mockDrive = new DriveInfo.Builder()
-         .uuid(drive.getDriveUuid())
-         .size(new BigInteger("1024000"))
-         .build();
-         
+               .uuid(drive.getDriveUuid())
+               .size(new BigInteger("1024000"))
+               .build();
+
          expect(api.getDriveInfo(drive.getDriveUuid())).andReturn(mockDrive);
       }
-      
+
       // tags
       expect(api.getTagInfo("foo")).andReturn(new Tag.Builder().name("foo").build());
-      expect(api.getTagInfo("jclouds-cloudsigma2-s")).andReturn(new Tag.Builder().name("jclouds-cloudsigma2-s").build());
+      expect(api.getTagInfo("jclouds-cloudsigma2-s")).andReturn(new Tag.Builder().name("jclouds-cloudsigma2-s")
+            .build());
       expect(api.getTagInfo("jclouds-cloudsigma2")).andReturn(new Tag.Builder().name("jclouds-cloudsigma2").build());
-      
+
       replay(api);
-      
+
       ServerInfoToNodeMetadata function = new ServerInfoToNodeMetadata(new ServerDriveToVolume(api), new NICToAddress(),
             serverStatusToNodeStatus, namingConvention, credentialStore, justProvider, api);
-      
+
       NodeMetadata converted = function.apply(input);
       assertEquals(converted, expected);
       assertEquals(converted.getName(), expected.getName());

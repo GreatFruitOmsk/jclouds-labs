@@ -16,18 +16,14 @@
  */
 package org.jclouds.cloudsigma2.compute.extensions;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.Iterables.any;
-import static com.google.common.collect.Iterables.filter;
-import static com.google.common.collect.Iterables.isEmpty;
-import static com.google.common.collect.Iterables.transform;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.inject.Inject;
-
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import org.jclouds.cloudsigma2.CloudSigma2Api;
 import org.jclouds.cloudsigma2.domain.FirewallAction;
 import org.jclouds.cloudsigma2.domain.FirewallDirection;
@@ -44,14 +40,16 @@ import org.jclouds.domain.Location;
 import org.jclouds.net.domain.IpPermission;
 import org.jclouds.net.domain.IpProtocol;
 
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
+import javax.inject.Inject;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.Iterables.any;
+import static com.google.common.collect.Iterables.filter;
+import static com.google.common.collect.Iterables.isEmpty;
+import static com.google.common.collect.Iterables.transform;
 
 public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension {
 
@@ -61,8 +59,8 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
 
    @Inject
    public CloudSigma2SecurityGroupExtension(CloudSigma2Api api,
-         Function<FirewallPolicy, SecurityGroup> firewallPolicyToSecurityGroup,
-         Map<IpProtocol, FirewallIpProtocol> ipProtocolToFirewallIpProtocol) {
+                                            Function<FirewallPolicy, SecurityGroup> firewallPolicyToSecurityGroup,
+                                            Map<IpProtocol, FirewallIpProtocol> ipProtocolToFirewallIpProtocol) {
       this.api = checkNotNull(api, "api");
       this.firewallPolicyToSecurityGroup = checkNotNull(firewallPolicyToSecurityGroup, "firewallPolicyToSecurityGroup");
       this.ipProtocolToFirewallIpProtocol = checkNotNull(ipProtocolToFirewallIpProtocol,
@@ -144,48 +142,48 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
 
    @Override
    public SecurityGroup addIpPermission(IpProtocol protocol, int startPort, int endPort,
-         Multimap<String, String> tenantIdGroupNamePairs, Iterable<String> ipRanges, Iterable<String> groupIds,
-         SecurityGroup group) {
+                                        Multimap<String, String> tenantIdGroupNamePairs, Iterable<String> ipRanges,
+                                        Iterable<String> groupIds, SecurityGroup group) {
       FirewallPolicy firewallPolicy = api.getFirewallPolicy(group.getId());
 
       List<FirewallRule> firewallRules = firewallPolicy.getRules() != null ? Lists.newArrayList(firewallPolicy
-            .getRules()) : Lists.<FirewallRule> newArrayList();
+            .getRules()) : Lists.<FirewallRule>newArrayList();
 
       if (!isEmpty(ipRanges)) {
          for (String ip : ipRanges) {
             firewallRules.add(new FirewallRule.Builder()
-               .direction(FirewallDirection.IN)
-               .action(FirewallAction.ACCEPT)
-               .ipProtocol(ipProtocolToFirewallIpProtocol.get(protocol))
-               .sourceIp(ip)
-               .destinationPort(startPort + ":" + endPort)
-               .build());
+                  .direction(FirewallDirection.IN)
+                  .action(FirewallAction.ACCEPT)
+                  .ipProtocol(ipProtocolToFirewallIpProtocol.get(protocol))
+                  .sourceIp(ip)
+                  .destinationPort(startPort + ":" + endPort)
+                  .build());
          }
       } else {
          FirewallRule.Builder firewallRuleBuilder = new FirewallRule.Builder()
-            .direction(FirewallDirection.IN)
-            .action(FirewallAction.ACCEPT)
-            .destinationPort(startPort + ":" + endPort);
+               .direction(FirewallDirection.IN)
+               .action(FirewallAction.ACCEPT)
+               .destinationPort(startPort + ":" + endPort);
          if (protocol != null) {
             firewallRuleBuilder.ipProtocol(ipProtocolToFirewallIpProtocol.get(protocol));
          }
          firewallRules.add(firewallRuleBuilder.build());
       }
-      
+
       firewallPolicy = api.editFirewallPolicy(firewallPolicy.getUuid(),
             FirewallPolicy.Builder.fromFirewallPolicy(firewallPolicy).rules(firewallRules).build());
-      
+
       return firewallPolicyToSecurityGroup.apply(firewallPolicy);
    }
 
    @Override
    public SecurityGroup removeIpPermission(final IpProtocol protocol, final int startPort, final int endPort,
-         Multimap<String, String> tenantIdGroupNamePairs, Iterable<String> ipRanges, Iterable<String> groupIds,
-         SecurityGroup group) {
-      final Set<String> ipSet = ipRanges != null ? ImmutableSet.copyOf(ipRanges) : Sets.<String> newHashSet();
-      
+                                           Multimap<String, String> tenantIdGroupNamePairs, Iterable<String> ipRanges,
+                                           Iterable<String> groupIds, SecurityGroup group) {
+      final Set<String> ipSet = ipRanges != null ? ImmutableSet.copyOf(ipRanges) : Sets.<String>newHashSet();
+
       FirewallPolicy firewallPolicy = api.getFirewallPolicy(group.getId());
-      
+
       firewallPolicy = api.editFirewallPolicy(
             firewallPolicy.getUuid(),
             FirewallPolicy.Builder.fromFirewallPolicy(firewallPolicy)
@@ -197,7 +195,7 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
                               && (!ipSet.contains(input.getSourceIp()));
                      }
                   }))).build());
-      
+
       return firewallPolicyToSecurityGroup.apply(firewallPolicy);
    }
 

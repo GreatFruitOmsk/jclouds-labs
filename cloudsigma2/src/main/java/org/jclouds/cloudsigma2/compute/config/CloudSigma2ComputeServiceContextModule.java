@@ -16,16 +16,14 @@
  */
 package org.jclouds.cloudsigma2.compute.config;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static org.jclouds.cloudsigma2.config.CloudSigma2Properties.TIMEOUT_DRIVE_CLONED;
-import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_SUSPENDED;
-import static org.jclouds.util.Predicates2.retry;
-
-import java.util.Map;
-
-import javax.inject.Named;
-import javax.inject.Singleton;
-
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableMap;
+import com.google.inject.Injector;
+import com.google.inject.Provides;
+import com.google.inject.TypeLiteral;
 import org.jclouds.cloudsigma2.CloudSigma2Api;
 import org.jclouds.cloudsigma2.compute.extensions.CloudSigma2SecurityGroupExtension;
 import org.jclouds.cloudsigma2.compute.functions.FirewallPolicyToSecurityGroup;
@@ -61,17 +59,17 @@ import org.jclouds.compute.reference.ComputeServiceConstants.PollPeriod;
 import org.jclouds.compute.reference.ComputeServiceConstants.Timeouts;
 import org.jclouds.domain.Location;
 import org.jclouds.functions.IdentityFunction;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
-import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableMap;
-import com.google.inject.Injector;
-import com.google.inject.Provides;
-import com.google.inject.TypeLiteral;
 import org.jclouds.net.domain.IpPermission;
 import org.jclouds.net.domain.IpProtocol;
+
+import javax.inject.Named;
+import javax.inject.Singleton;
+import java.util.Map;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.jclouds.cloudsigma2.config.CloudSigma2Properties.TIMEOUT_DRIVE_CLONED;
+import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_SUSPENDED;
+import static org.jclouds.util.Predicates2.retry;
 
 public class CloudSigma2ComputeServiceContextModule extends
       ComputeServiceAdapterContextModule<ServerInfo, Hardware, LibraryDrive, Location> {
@@ -103,11 +101,11 @@ public class CloudSigma2ComputeServiceContextModule extends
 
       bind(TemplateOptions.class).to(CloudSigma2TemplateOptions.class);
       bind(TemplateOptionsToStatement.class).to(TemplateOptionsToStatementWithoutPublicKey.class);
-      
+
       bind(new TypeLiteral<SecurityGroupExtension>() {
       }).to(CloudSigma2SecurityGroupExtension.class);
    }
-   
+
    @Override
    protected Optional<SecurityGroupExtension> provideSecurityGroupExtension(Injector i) {
       return Optional.of(i.getInstance(SecurityGroupExtension.class));
@@ -115,7 +113,7 @@ public class CloudSigma2ComputeServiceContextModule extends
 
    @VisibleForTesting
    public static final Map<ServerStatus, NodeMetadata.Status> serverStatusToNodeStatus = ImmutableMap
-         .<ServerStatus, NodeMetadata.Status> builder().put(ServerStatus.RUNNING, NodeMetadata.Status.RUNNING)
+         .<ServerStatus, NodeMetadata.Status>builder().put(ServerStatus.RUNNING, NodeMetadata.Status.RUNNING)
          .put(ServerStatus.STARTING, NodeMetadata.Status.PENDING)
          .put(ServerStatus.STOPPING, NodeMetadata.Status.PENDING)
          .put(ServerStatus.STOPPED, NodeMetadata.Status.SUSPENDED)
@@ -131,7 +129,7 @@ public class CloudSigma2ComputeServiceContextModule extends
 
    @VisibleForTesting
    public static final Map<DriveStatus, Image.Status> driveStatusToImageStatus = ImmutableMap
-         .<DriveStatus, Image.Status> builder().put(DriveStatus.MOUNTED, Image.Status.AVAILABLE)
+         .<DriveStatus, Image.Status>builder().put(DriveStatus.MOUNTED, Image.Status.AVAILABLE)
          .put(DriveStatus.UNMOUNTED, Image.Status.UNRECOGNIZED).put(DriveStatus.COPYING, Image.Status.PENDING)
          .put(DriveStatus.UNAVAILABLE, Image.Status.ERROR).build();
 
@@ -143,7 +141,7 @@ public class CloudSigma2ComputeServiceContextModule extends
 
    @VisibleForTesting
    public static final Map<FirewallIpProtocol, IpProtocol> firewallIpProtocolToIpProtocol = ImmutableMap
-         .<FirewallIpProtocol, IpProtocol> builder().put(FirewallIpProtocol.TCP, IpProtocol.TCP)
+         .<FirewallIpProtocol, IpProtocol>builder().put(FirewallIpProtocol.TCP, IpProtocol.TCP)
          .put(FirewallIpProtocol.UDP, IpProtocol.UDP).build();
 
    @Provides
@@ -153,7 +151,7 @@ public class CloudSigma2ComputeServiceContextModule extends
    }
 
    public static final Map<IpProtocol, FirewallIpProtocol> ipProtocolToFirewallIpProtocol = ImmutableMap
-         .<IpProtocol, FirewallIpProtocol> builder().put(IpProtocol.TCP, FirewallIpProtocol.TCP)
+         .<IpProtocol, FirewallIpProtocol>builder().put(IpProtocol.TCP, FirewallIpProtocol.TCP)
          .put(IpProtocol.UDP, FirewallIpProtocol.UDP).build();
 
    @Provides
@@ -166,17 +164,17 @@ public class CloudSigma2ComputeServiceContextModule extends
    @Singleton
    @Named(TIMEOUT_DRIVE_CLONED)
    protected Predicate<DriveInfo> provideDriveClonedPredicate(final CloudSigma2Api api,
-         @Named(TIMEOUT_DRIVE_CLONED) long driveClonedTimeout) {
+                                                              @Named(TIMEOUT_DRIVE_CLONED) long driveClonedTimeout) {
       return retry(new DriveClonedPredicate(api), driveClonedTimeout);
    }
-   
+
    @Provides
    @Singleton
    @Named(TIMEOUT_NODE_SUSPENDED)
    protected Predicate<String> provideServerStoppedPredicate(final CloudSigma2Api api, Timeouts timeouts,
-         PollPeriod pollPeriod) {
-      return retry(new ServerStatusPredicate(api, ServerStatus.STOPPED), timeouts.nodeSuspended, pollPeriod.pollInitialPeriod,
-            pollPeriod.pollMaxPeriod);
+                                                             PollPeriod pollPeriod) {
+      return retry(new ServerStatusPredicate(api, ServerStatus.STOPPED), timeouts.nodeSuspended,
+            pollPeriod.pollInitialPeriod, pollPeriod.pollMaxPeriod);
    }
 
    @VisibleForTesting
@@ -203,7 +201,7 @@ public class CloudSigma2ComputeServiceContextModule extends
          }
       }
    }
-   
+
    @VisibleForTesting
    static class ServerStatusPredicate implements Predicate<String> {
 

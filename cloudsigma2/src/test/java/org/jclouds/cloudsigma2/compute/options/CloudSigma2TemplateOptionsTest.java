@@ -16,11 +16,11 @@
  */
 package org.jclouds.cloudsigma2.compute.options;
 
-import static org.testng.Assert.assertEquals;
-
 import org.jclouds.cloudsigma2.domain.DeviceEmulationType;
 import org.jclouds.cloudsigma2.domain.Model;
 import org.testng.annotations.Test;
+
+import static org.testng.Assert.assertEquals;
 
 @Test(groups = "unit", testName = "CloudSigma2TemplateOptionsTest")
 public class CloudSigma2TemplateOptionsTest {
@@ -41,7 +41,7 @@ public class CloudSigma2TemplateOptionsTest {
       CloudSigma2TemplateOptions options = new CloudSigma2TemplateOptions.Builder().nicModel(Model.E1000);
       assertEquals(options.getNicModel(), Model.E1000);
    }
-   
+
    public void testVncPassword() {
       CloudSigma2TemplateOptions options = new CloudSigma2TemplateOptions.Builder().vncPassword("foo");
       assertEquals(options.getVncPassword(), "foo");
