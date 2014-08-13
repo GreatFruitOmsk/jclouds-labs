@@ -297,7 +297,7 @@ public class CloudSigma2ApiLiveTest extends BaseApiLiveTest<CloudSigma2Api> {
 
    @Test(dependsOnMethods = {"testCreateFirewallPolicies"})
    public void testGetFirewallPolicy() throws Exception {
-      for (FirewallPolicy firewallPolicy : api.listFirewallPolicies().concat()) {
+      for (FirewallPolicy firewallPolicy : api.listFirewallPoliciesInfo().concat()) {
          FirewallPolicy receivedPolicy = api.getFirewallPolicy(firewallPolicy.getUuid());
          checkFirewallPolicy(firewallPolicy, receivedPolicy);
          assertEquals(firewallPolicy.getUuid(), receivedPolicy.getUuid());
@@ -477,7 +477,7 @@ public class CloudSigma2ApiLiveTest extends BaseApiLiveTest<CloudSigma2Api> {
             .meta(meta)
             .build();
 
-      if (!api.listVLANs().isEmpty()) {
+      if (api.listVLANs().concat().size() > 0) {
          checkVlAN(vlanInfo, api.editVLAN(api.listVLANs().concat().get(0).getUuid(), vlanInfo));
       }
    }
@@ -508,7 +508,7 @@ public class CloudSigma2ApiLiveTest extends BaseApiLiveTest<CloudSigma2Api> {
             .meta(meta)
             .build();
 
-      if (!api.listIPs().isEmpty()) {
+      if (api.listIPs().concat().size() > 0) {
          checkIP(ip, api.editIP(api.listIPs().concat().get(0).getUuid(), ip));
       }
    }

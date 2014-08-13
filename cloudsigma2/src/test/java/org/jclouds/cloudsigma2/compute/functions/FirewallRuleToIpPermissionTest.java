@@ -94,7 +94,7 @@ public class FirewallRuleToIpPermissionTest {
                   .build(),
             new IpPermission.Builder()
                   .ipProtocol(IpProtocol.UDP)
-                  .cidrBlock("192.0.0.0/8-193.0.0.0/8")
+                  .cidrBlock("0.0.0.0/0")
                   .build(),
             new IpPermission.Builder()
                   .ipProtocol(IpProtocol.TCP)
