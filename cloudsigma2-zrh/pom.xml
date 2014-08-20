@@ -40,7 +40,7 @@
     <test.cloudsigma2-zrh.identity>FIXME</test.cloudsigma2-zrh.identity>
     <test.cloudsigma2-zrh.credential>FIXME</test.cloudsigma2-zrh.credential>
     <!-- Ubuntu 14.04 Cloud Image -->
-    <test.cloudsigma2-zrh.template>imageId=473adb38-3b64-43b2-93bd-f1a3443c19ea,loginUser=ubuntu,authenticateSudo=true</test.cloudsigma2-zrh.template>
+    <test.cloudsigma2-zrh.template>imageId=473adb38-3b64-43b2-93bd-f1a3443c19ea,loginUser=ubuntu</test.cloudsigma2-zrh.template>
     <jclouds.osgi.export>org.jclouds.cloudsigma2*;version="${project.version}"</jclouds.osgi.export>
     <jclouds.osgi.import>
       org.jclouds.compute.internal;version="${project.version}",
