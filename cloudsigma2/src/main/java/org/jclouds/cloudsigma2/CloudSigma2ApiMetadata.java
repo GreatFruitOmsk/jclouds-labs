@@ -57,11 +57,7 @@ public class CloudSigma2ApiMetadata extends BaseHttpApiMetadata<CloudSigma2Api> 
       properties.setProperty(PROPERTY_VNC_PASSWORD, "IL9vs34d");
       properties.setProperty(TIMEOUT_DRIVE_CLONED, "60000");
       properties.setProperty(PROPERTY_DELETE_DRIVES, "true");
-      // passwords are set post-boot, so auth failures are possible
-      // from a race condition applying the password set script
-      properties.setProperty("jclouds.ssh.max-retries", "7");
-      properties.setProperty("jclouds.ssh.retry-auth", "true");
-      properties.setProperty(TEMPLATE, "imageNameMatches=Ubuntu.*[Cc]loud [Ii]mage.*");
+      properties.setProperty(TEMPLATE, "imageNameMatches=Ubuntu.*[Cc]loud [Ii]mage.*,loginUser=ubuntu");
       return properties;
    }
 
