@@ -698,12 +698,13 @@ public class CloudSigma2ApiLiveTest extends BaseApiLiveTest<CloudSigma2Api> {
    private void checkLibraryDrive(LibraryDrive newDrive, LibraryDrive createdDrive) {
       checkDrive(newDrive, createdDrive);
       Map<String, String> meta = createdDrive.getMeta();
-      assertEquals(newDrive.getArch(), meta.get("arch"));
-      assertEquals(newDrive.getDescription(), meta.get("description"));
-      assertEquals(newDrive.getImageType(), meta.get("image_type"));
-      assertEquals(newDrive.getInstallNotes(), meta.get("install_notes"));
-      assertEquals(newDrive.getOs(), meta.get("os"));
-      assertEquals(newDrive.getVersion(), meta.get("version"));
+
+      assertEquals(newDrive.getArch() == null ? "None" : newDrive.getArch(), meta.get("arch"));
+      assertEquals(newDrive.getDescription() == null ? "None" : newDrive.getDescription(), meta.get("description"));
+      assertEquals(newDrive.getImageType() == null ? "None" : newDrive.getImageType(), meta.get("image_type"));
+      assertEquals(newDrive.getInstallNotes() == null ? "None" : newDrive.getInstallNotes(), meta.get("install_notes"));
+      assertEquals(newDrive.getOs() == null ? "None" : newDrive.getOs(), meta.get("os"));
+      assertEquals(newDrive.getVersion() == null ? "None" : newDrive.getVersion(), meta.get("version"));
    }
 
    private void checkServer(ServerInfo newServer, ServerInfo createdServer) {
