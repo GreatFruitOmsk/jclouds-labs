@@ -149,6 +149,16 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
       List<FirewallRule> firewallRules = firewallPolicy.getRules() != null ? Lists.newArrayList(firewallPolicy
             .getRules()) : Lists.<FirewallRule>newArrayList();
 
+      String firewallPortRange;
+      if (startPort > endPort) {
+         throw new IllegalArgumentException("Invalid port range '" + startPort + ":" + endPort +"'. startPort should " +
+               "be smaller than endPort");
+      } else if (startPort == endPort) {
+         firewallPortRange = "" + startPort;
+      } else {
+         firewallPortRange = startPort + ":" + endPort;
+      }
+
       if (!isEmpty(ipRanges)) {
          for (String ip : ipRanges) {
             firewallRules.add(new FirewallRule.Builder()
@@ -156,14 +166,14 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
                   .action(FirewallAction.ACCEPT)
                   .ipProtocol(ipProtocolToFirewallIpProtocol.get(protocol))
                   .sourceIp(ip)
-                  .destinationPort(startPort + ":" + endPort)
+                  .destinationPort(firewallPortRange)
                   .build());
          }
       } else {
          FirewallRule.Builder firewallRuleBuilder = new FirewallRule.Builder()
                .direction(FirewallDirection.IN)
                .action(FirewallAction.ACCEPT)
-               .destinationPort(startPort + ":" + endPort);
+               .destinationPort(firewallPortRange);
          if (protocol != null) {
             firewallRuleBuilder.ipProtocol(ipProtocolToFirewallIpProtocol.get(protocol));
          }
