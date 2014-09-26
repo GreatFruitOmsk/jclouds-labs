@@ -477,7 +477,7 @@ public class CloudSigma2ApiLiveTest extends BaseApiLiveTest<CloudSigma2Api> {
             .meta(meta)
             .build();
 
-      if (api.listVLANs().concat().size() > 0) {
+      if (!api.listVLANs().concat().isEmpty()) {
          checkVlAN(vlanInfo, api.editVLAN(api.listVLANs().concat().get(0).getUuid(), vlanInfo));
       }
    }
@@ -508,7 +508,7 @@ public class CloudSigma2ApiLiveTest extends BaseApiLiveTest<CloudSigma2Api> {
             .meta(meta)
             .build();
 
-      if (api.listIPs().concat().size() > 0) {
+      if (!api.listIPs().concat().isEmpty()) {
          checkIP(ip, api.editIP(api.listIPs().concat().get(0).getUuid(), ip));
       }
    }

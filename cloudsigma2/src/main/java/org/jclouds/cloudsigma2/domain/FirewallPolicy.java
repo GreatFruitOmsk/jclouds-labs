@@ -137,9 +137,9 @@ public class FirewallPolicy extends Item {
       super(uuid, name, resourceUri);
       this.meta = meta;
       this.owner = owner;
-      this.rules = rules == null ? new ArrayList<FirewallRule>() : rules;
-      this.tags = tags == null ? new ArrayList<Tag>() : tags;
-      this.servers = servers == null ? new ArrayList<Server>() : servers;
+      this.rules = rules == null ? new ArrayList<>() : rules;
+      this.tags = tags == null ? new ArrayList<>() : tags;
+      this.servers = servers == null ? new ArrayList<>() : servers;
    }
 
    /**
@@ -185,7 +185,7 @@ public class FirewallPolicy extends Item {
    }
 
    /**
-    * @return Many related resources. Can be either a list of URIs or list of individually nested resource data.
+    * @return Related resources URI list.
     */
    public List<Tag> getTags() {
       return tags;

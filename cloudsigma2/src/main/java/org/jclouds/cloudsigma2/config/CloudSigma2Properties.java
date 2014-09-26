@@ -30,7 +30,7 @@ public class CloudSigma2Properties {
    public static final String TIMEOUT_DRIVE_CLONED = "jclouds.cloudsigma.timeout.drive-cloned";
    
    /**
-    * Controls if the drives of a server must be destroyed when deleting the server
+    * Controls if the drives of a server should be destroyed when deleting the server
     * Default: true 
     */
    public static final String PROPERTY_DELETE_DRIVES = "jclouds.cloudsigma.delete-drives";

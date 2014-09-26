@@ -111,7 +111,7 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
    public boolean removeSecurityGroup(String id) {
       FirewallPolicy firewallPolicy = api.getFirewallPolicy(id);
       if (firewallPolicy == null) {
-         throw new IllegalArgumentException("There is no SecurityGroup with " + id + " id");
+         throw new IllegalArgumentException("There is no FirewallPolicy with " + id + " id");
       }
 
       if (any(firewallPolicy.getServers(), new Predicate<Server>() {
@@ -121,7 +121,7 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
             return !ServerStatus.STOPPED.equals(serverInfo.getStatus());
          }
       })) {
-         throw new IllegalStateException("Can't delete SecurityGroup while there are nodes running in them");
+         throw new IllegalStateException("Can't delete FirewallPolicy while there are nodes running in them");
       }
 
       api.deleteFirewallPolicy(id);

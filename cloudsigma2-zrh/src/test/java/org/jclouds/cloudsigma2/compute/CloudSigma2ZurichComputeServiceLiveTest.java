@@ -18,7 +18,7 @@ package org.jclouds.cloudsigma2.compute;
 
 import org.testng.annotations.Test;
 
-@Test(groups = "live", testName = "CloudSigma2LasVegasComputeServiceLiveTest")
+@Test(groups = "live", testName = "CloudSigma2ZurichComputeServiceLiveTest")
 public class CloudSigma2ZurichComputeServiceLiveTest extends CloudSigma2ComputeServiceLiveTest {
 
    public CloudSigma2ZurichComputeServiceLiveTest() {
