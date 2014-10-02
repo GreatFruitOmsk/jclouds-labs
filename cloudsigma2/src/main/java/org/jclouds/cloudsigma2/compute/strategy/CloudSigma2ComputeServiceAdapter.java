@@ -24,7 +24,6 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSet.Builder;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -349,14 +348,14 @@ public class CloudSigma2ComputeServiceAdapter implements
       }
 
       List<Tag> tags = builder.build();
-      List<Tag> result = Lists.newArrayList();
+      builder = ImmutableList.builder();
 
       if (!tags.isEmpty()) {
          logger.debug(">> creating tags...");
-         result.addAll(api.createTags(tags));
+         builder.addAll(api.createTags(tags));
       }
 
-      return result;
+      return builder.build();
    }
 
    private void deleteTags(List<Tag> tags) {
