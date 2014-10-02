@@ -53,8 +53,9 @@ public class FirewallRuleToIpPermission implements Function<FirewallRule, IpPerm
             permissionBuilder.fromPort(ports[0]);
             permissionBuilder.toPort(ports[1]);
          } else {
-            permissionBuilder.fromPort(Integer.parseInt(destinationPort));
-            permissionBuilder.toPort(Integer.parseInt(destinationPort));
+            int port = Integer.parseInt(destinationPort);
+            permissionBuilder.fromPort(port);
+            permissionBuilder.toPort(port);
          }
       }
       permissionBuilder.ipProtocol(input.getIpProtocol() != null ? firewallIpProtocolToIpProtocol.get(input
