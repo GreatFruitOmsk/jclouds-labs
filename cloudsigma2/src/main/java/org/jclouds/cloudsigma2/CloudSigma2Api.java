@@ -578,7 +578,7 @@ public interface CloudSigma2Api extends Closeable {
    PaginatedCollection<FirewallPolicy> listFirewallPoliciesInfo(PaginationOptions options);
 
    /**
-    * Gets a detailed list of firewall policy
+    * Gets firewall policy.
     *
     * @return firewall policy
     */

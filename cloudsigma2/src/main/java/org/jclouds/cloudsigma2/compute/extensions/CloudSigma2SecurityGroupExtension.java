@@ -151,7 +151,7 @@ public class CloudSigma2SecurityGroupExtension implements SecurityGroupExtension
 
       String firewallPortRange;
       if (startPort > endPort) {
-         throw new IllegalArgumentException("Invalid port range '" + startPort + ":" + endPort +"'. startPort should " +
+         throw new IllegalArgumentException("Invalid port range '" + startPort + ":" + endPort + "'. startPort should " +
                "be smaller than endPort");
       } else if (startPort == endPort) {
          firewallPortRange = "" + startPort;

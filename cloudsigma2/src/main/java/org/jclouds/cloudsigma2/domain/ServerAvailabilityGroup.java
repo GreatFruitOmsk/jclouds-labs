@@ -18,8 +18,6 @@ package org.jclouds.cloudsigma2.domain;
 
 import java.util.List;
 
-import com.google.common.base.Joiner;
-
 public class ServerAvailabilityGroup {
 
    private final List<String> uuids;
