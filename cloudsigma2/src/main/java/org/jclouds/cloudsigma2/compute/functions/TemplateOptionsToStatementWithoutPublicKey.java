@@ -46,14 +46,14 @@ public class TemplateOptionsToStatementWithoutPublicKey extends TemplateOptionsT
       }
 
       ImmutableList<Statement> bootstrap = builder.build();
-      if (!bootstrap.isEmpty()) {
-         if (options.getTaskName() == null && !(options.getRunScript() instanceof InitScript)) {
-            options.nameTask("bootstrap");
-         }
-         return bootstrap.size() == 1 ? bootstrap.get(0) : new StatementList(bootstrap);
+      if (bootstrap.isEmpty()) {
+         return null;
       }
 
-      return null;
+      if (options.getTaskName() == null && !(options.getRunScript() instanceof InitScript)) {
+         options.nameTask("bootstrap");
+      }
+      return bootstrap.size() == 1 ? bootstrap.get(0) : new StatementList(bootstrap);
    }
 
 }
