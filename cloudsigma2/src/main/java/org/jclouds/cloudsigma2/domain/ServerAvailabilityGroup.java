@@ -16,6 +16,7 @@
  */
 package org.jclouds.cloudsigma2.domain;
 
+import java.util.Iterator;
 import java.util.List;
 
 public class ServerAvailabilityGroup {
