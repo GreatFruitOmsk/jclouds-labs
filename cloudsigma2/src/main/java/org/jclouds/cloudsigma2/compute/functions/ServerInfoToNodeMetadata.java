@@ -99,7 +99,7 @@ public class ServerInfoToNodeMetadata implements Function<ServerInfo, NodeMetada
       return builder.build();
    }
 
-   private String extractImageId(ServerInfo serverInfo) {
+   private static String extractImageId(ServerInfo serverInfo) {
       String imageId = serverInfo.getMeta().get("image_id");
 
       if (imageId == null) {
