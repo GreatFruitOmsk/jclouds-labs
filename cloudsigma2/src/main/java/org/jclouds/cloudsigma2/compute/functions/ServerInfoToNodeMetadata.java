@@ -105,7 +105,7 @@ public class ServerInfoToNodeMetadata implements Function<ServerInfo, NodeMetada
       if (imageId == null) {
          ServerDrive serverBootDrive = null;
          for (ServerDrive serverDrive : serverInfo.getDrives()) {
-            if (serverDrive.getBootOrder() > 0
+            if (serverDrive.getBootOrder() != null
                   && (serverBootDrive == null || serverDrive.getBootOrder() < serverBootDrive.getBootOrder())) {
                serverBootDrive = serverDrive;
             }
