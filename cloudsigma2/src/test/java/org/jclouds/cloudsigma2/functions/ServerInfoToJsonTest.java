@@ -130,7 +130,7 @@ public class ServerInfoToJsonTest {
       tagsArray.add(tagObject1);
       tagsArray.add(tagObject2);
       expected.add("tags", tagsArray);
-      
+
       expected.addProperty("vnc_password", "tester");
 
       JsonObject nicJson = new JsonObject();
@@ -148,7 +148,7 @@ public class ServerInfoToJsonTest {
 
       JsonArray drivesArray = new JsonArray();
       JsonObject driveJson1 = new JsonObject();
-      driveJson1.addProperty("boot_order", 0);
+      driveJson1.addProperty("boot_order", (Number) null);
       driveJson1.addProperty("dev_channel", "0:0");
       driveJson1.addProperty("device", "ide");
       driveJson1.addProperty("drive", "ae78e68c-9daa-4471-8878-0bb87fa80260");
