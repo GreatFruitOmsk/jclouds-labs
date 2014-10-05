@@ -18,7 +18,6 @@ package org.jclouds.cloudsigma2.compute.functions;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.name.Names;
@@ -60,12 +59,6 @@ public class FirewallPolicyToSecurityGroupTest {
                   "test key", "test value"))
             .rules(ImmutableList.of(
                   new FirewallRule.Builder()
-                        .action(FirewallAction.DROP)
-                        .comment("Drop traffic from the VM to IP address 23.0.0.0/32")
-                        .direction(FirewallDirection.OUT)
-                        .destinationIp("23.0.0.0/32")
-                        .build(),
-                  new FirewallRule.Builder()
                         .action(FirewallAction.ACCEPT)
                         .comment("Allow SSH traffic to the VM from our office in Dubai")
                         .direction(FirewallDirection.IN)
@@ -74,25 +67,28 @@ public class FirewallPolicyToSecurityGroupTest {
                         .sourceIp("172.66.32.0/24")
                         .build(),
                   new FirewallRule.Builder()
-                        .action(FirewallAction.DROP)
-                        .comment("Drop all other SSH traffic to the VM")
+                        .action(FirewallAction.ACCEPT)
+                        .comment("Drop SSH traffic to the VM from our office in Dubai")
                         .direction(FirewallDirection.IN)
-                        .destinationPort("22")
+                        .destinationPort("!22")
                         .ipProtocol(FirewallIpProtocol.TCP)
+                        .sourceIp("172.66.32.0/24")
                         .build(),
                   new FirewallRule.Builder()
                         .action(FirewallAction.DROP)
-                        .comment("Drop all UDP traffic to the VM, not originating from 172.66.32.55")
+                        .comment("Drop HTTP traffic to the VM from our office in Dubai")
                         .direction(FirewallDirection.IN)
-                        .ipProtocol(FirewallIpProtocol.UDP)
-                        .sourceIp("!172.66.32.55/32")
+                        .destinationPort("80")
+                        .ipProtocol(FirewallIpProtocol.TCP)
+                        .sourceIp("172.66.32.0/24")
                         .build(),
                   new FirewallRule.Builder()
                         .action(FirewallAction.DROP)
-                        .comment("Drop any traffic, to the VM with destination port not between 1-1024")
+                        .comment("Accept HTTP traffic to the VM from our office in Dubai")
                         .direction(FirewallDirection.IN)
-                        .destinationPort("!1:1024")
+                        .destinationPort("!80")
                         .ipProtocol(FirewallIpProtocol.TCP)
+                        .sourceIp("172.66.32.0/24")
                         .build()))
             .build();
 
@@ -102,11 +98,7 @@ public class FirewallPolicyToSecurityGroupTest {
             .uri(new URI("/api/2.0/fwpolicies/cf8479b4-c98b-46c8-ab9c-108bb00c8218/"))
             .userMetadata(ImmutableMap.of("description", "test firewall policy",
                   "test key", "test value"))
-            .ipPermissions(ImmutableSet.of(
-                  new IpPermission.Builder()
-                        .ipProtocol(IpProtocol.UNRECOGNIZED)
-                        .cidrBlock("0.0.0.0/0")
-                        .build(),
+            .ipPermissions(ImmutableList.of(
                   new IpPermission.Builder()
                         .ipProtocol(IpProtocol.TCP)
                         .cidrBlock("172.66.32.0/24")
@@ -115,21 +107,34 @@ public class FirewallPolicyToSecurityGroupTest {
                         .build(),
                   new IpPermission.Builder()
                         .ipProtocol(IpProtocol.TCP)
-                        .cidrBlock("0.0.0.0/0")
-                        .fromPort(22)
-                        .toPort(22)
-                        .build(),
-                  new IpPermission.Builder()
-                        .ipProtocol(IpProtocol.UDP)
-                        .cidrBlock("0.0.0.0/0")
+                        .cidrBlock("172.66.32.0/24")
+                        .fromPort(0)
+                        .toPort(21)
                         .build(),
                   new IpPermission.Builder()
                         .ipProtocol(IpProtocol.TCP)
-                        .cidrBlock("0.0.0.0/0")
-                        .fromPort(1)
-                        .toPort(1024)
-                        .build()
-            ))
+                        .cidrBlock("172.66.32.0/24")
+                        .fromPort(23)
+                        .toPort(65535)
+                        .build(),
+                  new IpPermission.Builder()
+                        .ipProtocol(IpProtocol.TCP)
+                        .fromPort(0)
+                        .toPort(79)
+                        .cidrBlock("172.66.32.0/24")
+                        .build(),
+                  new IpPermission.Builder()
+                        .ipProtocol(IpProtocol.TCP)
+                        .fromPort(81)
+                        .toPort(65535)
+                        .cidrBlock("172.66.32.0/24")
+                        .build(),
+                  new IpPermission.Builder()
+                        .ipProtocol(IpProtocol.TCP)
+                        .fromPort(80)
+                        .toPort(80)
+                        .cidrBlock("172.66.32.0/24")
+                        .build()))
             .build();
 
       namingConvention = Guice.createInjector(new AbstractModule() {
@@ -143,7 +148,7 @@ public class FirewallPolicyToSecurityGroupTest {
    public void testConvertFirewallPolicy() {
       CloudSigma2Api api = EasyMock.createMock(CloudSigma2Api.class);
       FirewallPolicyToSecurityGroup function = new FirewallPolicyToSecurityGroup(api, namingConvention,
-            new FirewallRuleToIpPermission(firewallIpProtocolToIpProtocol));
+            new FirewallRuleToIpPermissions(firewallIpProtocolToIpProtocol));
       SecurityGroup converted = function.apply(input);
       assertEquals(converted, expected);
    }

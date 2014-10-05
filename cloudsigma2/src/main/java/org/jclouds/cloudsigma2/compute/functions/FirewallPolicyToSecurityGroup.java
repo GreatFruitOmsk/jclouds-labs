@@ -17,6 +17,7 @@
 package org.jclouds.cloudsigma2.compute.functions;
 
 import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
 import org.jclouds.cloudsigma2.CloudSigma2Api;
 import org.jclouds.cloudsigma2.domain.FirewallPolicy;
 import org.jclouds.cloudsigma2.domain.Tag;
@@ -36,16 +37,16 @@ public class FirewallPolicyToSecurityGroup implements Function<FirewallPolicy, S
 
    private final CloudSigma2Api api;
    private final GroupNamingConvention groupNamingConventionWithPrefix;
-   private final FirewallRuleToIpPermission firewallRuleToIpPermission;
+   private final FirewallRuleToIpPermissions firewallRuleToIpPermissions;
 
    @Inject
    public FirewallPolicyToSecurityGroup(CloudSigma2Api api,
                                         GroupNamingConvention.Factory groupNamingConventionWithPrefix,
-                                        FirewallRuleToIpPermission firewallRuleToIpPermission) {
+                                        FirewallRuleToIpPermissions firewallRuleToIpPermissions) {
       this.api = checkNotNull(api, "api");
       this.groupNamingConventionWithPrefix = checkNotNull(groupNamingConventionWithPrefix,
             "groupNamingConventionWithPrefix").create();
-      this.firewallRuleToIpPermission = checkNotNull(firewallRuleToIpPermission, "firewallRuleToIpPermission");
+      this.firewallRuleToIpPermissions = checkNotNull(firewallRuleToIpPermissions, "firewallRuleToIpPermissions");
 
    }
 
@@ -62,7 +63,7 @@ public class FirewallPolicyToSecurityGroup implements Function<FirewallPolicy, S
    }
 
    private Iterable<IpPermission> readIpPermissions(FirewallPolicy firewallPolicy) {
-      return transform(firewallPolicy.getRules(), firewallRuleToIpPermission);
+      return Iterables.concat(transform(firewallPolicy.getRules(), firewallRuleToIpPermissions));
    }
 
    private Iterable<String> readTags(FirewallPolicy firewallPolicy) {

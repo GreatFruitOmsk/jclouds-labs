@@ -27,7 +27,7 @@ import com.google.inject.TypeLiteral;
 import org.jclouds.cloudsigma2.CloudSigma2Api;
 import org.jclouds.cloudsigma2.compute.extensions.CloudSigma2SecurityGroupExtension;
 import org.jclouds.cloudsigma2.compute.functions.FirewallPolicyToSecurityGroup;
-import org.jclouds.cloudsigma2.compute.functions.FirewallRuleToIpPermission;
+import org.jclouds.cloudsigma2.compute.functions.FirewallRuleToIpPermissions;
 import org.jclouds.cloudsigma2.compute.functions.LibraryDriveToImage;
 import org.jclouds.cloudsigma2.compute.functions.NICToAddress;
 import org.jclouds.cloudsigma2.compute.functions.ServerDriveToVolume;
@@ -96,8 +96,8 @@ public class CloudSigma2ComputeServiceContextModule extends
       }).to(NICToAddress.class);
       bind(new TypeLiteral<Function<FirewallPolicy, SecurityGroup>>() {
       }).to(FirewallPolicyToSecurityGroup.class);
-      bind(new TypeLiteral<Function<FirewallRule, IpPermission>>() {
-      }).to(FirewallRuleToIpPermission.class);
+      bind(new TypeLiteral<Function<FirewallRule, Iterable<IpPermission>>>() {
+      }).to(FirewallRuleToIpPermissions.class);
 
       bind(TemplateOptions.class).to(CloudSigma2TemplateOptions.class);
       bind(TemplateOptionsToStatement.class).to(TemplateOptionsToStatementWithoutPublicKey.class);
