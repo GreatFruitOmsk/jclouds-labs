@@ -18,16 +18,11 @@ package org.jclouds.cloudsigma2.compute.config;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
-import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
-import com.google.inject.Injector;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import org.jclouds.cloudsigma2.CloudSigma2Api;
-import org.jclouds.cloudsigma2.compute.extensions.CloudSigma2SecurityGroupExtension;
-import org.jclouds.cloudsigma2.compute.functions.FirewallPolicyToSecurityGroup;
-import org.jclouds.cloudsigma2.compute.functions.FirewallRuleToIpPermissions;
 import org.jclouds.cloudsigma2.compute.functions.LibraryDriveToImage;
 import org.jclouds.cloudsigma2.compute.functions.NICToAddress;
 import org.jclouds.cloudsigma2.compute.functions.ServerDriveToVolume;
@@ -37,9 +32,6 @@ import org.jclouds.cloudsigma2.compute.options.CloudSigma2TemplateOptions;
 import org.jclouds.cloudsigma2.compute.strategy.CloudSigma2ComputeServiceAdapter;
 import org.jclouds.cloudsigma2.domain.DriveInfo;
 import org.jclouds.cloudsigma2.domain.DriveStatus;
-import org.jclouds.cloudsigma2.domain.FirewallIpProtocol;
-import org.jclouds.cloudsigma2.domain.FirewallPolicy;
-import org.jclouds.cloudsigma2.domain.FirewallRule;
 import org.jclouds.cloudsigma2.domain.LibraryDrive;
 import org.jclouds.cloudsigma2.domain.NIC;
 import org.jclouds.cloudsigma2.domain.ServerDrive;
@@ -50,17 +42,13 @@ import org.jclouds.compute.config.ComputeServiceAdapterContextModule;
 import org.jclouds.compute.domain.Hardware;
 import org.jclouds.compute.domain.Image;
 import org.jclouds.compute.domain.NodeMetadata;
-import org.jclouds.compute.domain.SecurityGroup;
 import org.jclouds.compute.domain.Volume;
-import org.jclouds.compute.extensions.SecurityGroupExtension;
 import org.jclouds.compute.functions.TemplateOptionsToStatement;
 import org.jclouds.compute.options.TemplateOptions;
 import org.jclouds.compute.reference.ComputeServiceConstants.PollPeriod;
 import org.jclouds.compute.reference.ComputeServiceConstants.Timeouts;
 import org.jclouds.domain.Location;
 import org.jclouds.functions.IdentityFunction;
-import org.jclouds.net.domain.IpPermission;
-import org.jclouds.net.domain.IpProtocol;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -94,21 +82,9 @@ public class CloudSigma2ComputeServiceContextModule extends
       }).to(Class.class.cast(IdentityFunction.class));
       bind(new TypeLiteral<Function<NIC, String>>() {
       }).to(NICToAddress.class);
-      bind(new TypeLiteral<Function<FirewallPolicy, SecurityGroup>>() {
-      }).to(FirewallPolicyToSecurityGroup.class);
-      bind(new TypeLiteral<Function<FirewallRule, Iterable<IpPermission>>>() {
-      }).to(FirewallRuleToIpPermissions.class);
 
       bind(TemplateOptions.class).to(CloudSigma2TemplateOptions.class);
       bind(TemplateOptionsToStatement.class).to(TemplateOptionsToStatementWithoutPublicKey.class);
-
-      bind(new TypeLiteral<SecurityGroupExtension>() {
-      }).to(CloudSigma2SecurityGroupExtension.class);
-   }
-
-   @Override
-   protected Optional<SecurityGroupExtension> provideSecurityGroupExtension(Injector i) {
-      return Optional.of(i.getInstance(SecurityGroupExtension.class));
    }
 
    @VisibleForTesting
@@ -137,27 +113,6 @@ public class CloudSigma2ComputeServiceContextModule extends
    @Singleton
    protected Map<DriveStatus, Image.Status> provideImageStatusMap() {
       return driveStatusToImageStatus;
-   }
-
-   @VisibleForTesting
-   public static final Map<FirewallIpProtocol, IpProtocol> firewallIpProtocolToIpProtocol = ImmutableMap
-         .<FirewallIpProtocol, IpProtocol>builder().put(FirewallIpProtocol.TCP, IpProtocol.TCP)
-         .put(FirewallIpProtocol.UDP, IpProtocol.UDP).build();
-
-   @Provides
-   @Singleton
-   protected Map<FirewallIpProtocol, IpProtocol> provideIpProtocolMap() {
-      return firewallIpProtocolToIpProtocol;
-   }
-
-   public static final Map<IpProtocol, FirewallIpProtocol> ipProtocolToFirewallIpProtocol = ImmutableMap
-         .<IpProtocol, FirewallIpProtocol>builder().put(IpProtocol.TCP, FirewallIpProtocol.TCP)
-         .put(IpProtocol.UDP, FirewallIpProtocol.UDP).build();
-
-   @Provides
-   @Singleton
-   protected Map<IpProtocol, FirewallIpProtocol> provideFirewallIpProtocolMap() {
-      return ipProtocolToFirewallIpProtocol;
    }
 
    @Provides
